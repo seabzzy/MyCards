@@ -23,17 +23,30 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - uses: android-actions/setup-android@v3
-
-      - uses: gradle/actions/setup-gradle@v4
-
       - name: Build release APK
         id: build
         continue-on-error: true
         run: |
-          chmod +x ./gradlew
           set -o pipefail
-          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee build.log
+          {
+            echo "== Android SDK =="
+            SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+            if [ ! -d "$SDK/cmdline-tools" ]; then
+              echo "SDK not found, installing command-line tools"
+              SDK="$HOME/android-sdk"; mkdir -p "$SDK/cmdline-tools"
+              curl -sSL -o /tmp/clt.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+              unzip -q /tmp/clt.zip -d "$SDK/cmdline-tools" && mv "$SDK/cmdline-tools/cmdline-tools" "$SDK/cmdline-tools/latest"
+            fi
+            export ANDROID_HOME="$SDK" ANDROID_SDK_ROOT="$SDK"
+            echo "sdk.dir=$SDK" > local.properties
+            SDKM=$(ls -d "$SDK"/cmdline-tools/*/bin/sdkmanager | sort | tail -1)
+            echo "Using $SDKM"
+            yes | "$SDKM" --licenses > /dev/null || true
+            "$SDKM" "platforms;android-36" "build-tools;36.0.0" "platform-tools" > /dev/null || echo "sdkmanager install warning"
+            echo "== Gradle build =="
+            chmod +x ./gradlew
+            ./gradlew assembleRelease --no-daemon --stacktrace
+          } 2>&1 | tee build.log
 
       # Результат (APK или лог ошибки) кладётся в ветку «builds» —
       # оттуда его забирает Claude и присылает в чат.
