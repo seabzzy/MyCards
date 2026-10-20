@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- задняя карта -->
+    <path android:fillColor="#80FFFFFF"
+        android:pathData="M38,34h32a6,6 0,0 1,6 6v6h-44v-6a6,6 0,0 1,6 -6z" />
+    <!-- передняя карта -->
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M36,42h36a6,6 0,0 1,6 6v20a6,6 0,0 1,-6 6h-36a6,6 0,0 1,-6 -6v-20a6,6 0,0 1,6 -6z" />
+    <!-- штрихкод -->
+    <path android:fillColor="#3E6BFF"
+        android:pathData="M40,56h2v12h-2zM44,56h1v12h-1zM47,56h3v12h-3zM52,56h1v12h-1zM55,56h2v12h-2zM59,56h1v12h-1zM62,56h3v12h-3zM67,56h1v12h-1z" />
+    <path android:fillColor="#3E6BFF"
+        android:pathData="M40,47h14a2,2 0,0 1,0 4h-14a2,2 0,0 1,0 -4z" />
+</vector>

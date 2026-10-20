@@ -1,0 +1,852 @@
+[
+ {
+  "id": "pyaterochka",
+  "name": "Пятёрочка",
+  "category": "Продукты",
+  "aliases": [
+   "пятёрочка",
+   "пятерочка",
+   "pyaterochka",
+   "выручай-карта",
+   "x5 club"
+  ],
+  "domains": [
+   "5ka.ru",
+   "x5club",
+   "x5.ru"
+  ],
+  "colors": [
+   "#E52421",
+   "#9E1B1B"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "perekrestok",
+  "name": "Перекрёсток",
+  "category": "Продукты",
+  "aliases": [
+   "перекрёсток",
+   "перекресток",
+   "perekrestok"
+  ],
+  "domains": [
+   "perekrestok.ru"
+  ],
+  "colors": [
+   "#11883A",
+   "#075A27"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "magnit",
+  "name": "Магнит",
+  "category": "Продукты",
+  "aliases": [
+   "магнит",
+   "magnit",
+   "магнит косметик"
+  ],
+  "domains": [
+   "magnit.ru",
+   "magnit.com"
+  ],
+  "colors": [
+   "#E30613",
+   "#A0050F"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "lenta",
+  "name": "Лента",
+  "category": "Продукты",
+  "aliases": [
+   "лента",
+   "lenta"
+  ],
+  "domains": [
+   "lenta.com",
+   "lenta.ru"
+  ],
+  "colors": [
+   "#1450B4",
+   "#062457"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "vkusvill",
+  "name": "ВкусВилл",
+  "category": "Продукты",
+  "aliases": [
+   "вкусвилл",
+   "vkusvill",
+   "вкус вилл"
+  ],
+  "domains": [
+   "vkusvill.ru"
+  ],
+  "colors": [
+   "#3DB54A",
+   "#1F7F35"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "auchan",
+  "name": "Ашан",
+  "category": "Продукты",
+  "aliases": [
+   "ашан",
+   "auchan"
+  ],
+  "domains": [
+   "auchan.ru"
+  ],
+  "colors": [
+   "#E2001A",
+   "#9C0012"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "okey",
+  "name": "О'КЕЙ",
+  "category": "Продукты",
+  "aliases": [
+   "о'кей",
+   "окей",
+   "okey",
+   "o'key"
+  ],
+  "domains": [
+   "okmarket.ru"
+  ],
+  "colors": [
+   "#E2231A",
+   "#8C1410"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "metro",
+  "name": "METRO",
+  "category": "Продукты",
+  "aliases": [
+   "metro cash",
+   "метро кэш",
+   "metro"
+  ],
+  "domains": [
+   "metro-cc.ru"
+  ],
+  "colors": [
+   "#0B4C9C",
+   "#00244A"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "dixy",
+  "name": "Дикси",
+  "category": "Продукты",
+  "aliases": [
+   "дикси",
+   "dixy"
+  ],
+  "domains": [
+   "dixy.ru"
+  ],
+  "colors": [
+   "#F58220",
+   "#C25B05"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "spar",
+  "name": "SPAR",
+  "category": "Продукты",
+  "aliases": [
+   "spar",
+   "спар"
+  ],
+  "domains": [
+   "spar.ru",
+   "myspar.ru"
+  ],
+  "colors": [
+   "#00843D",
+   "#005C2A"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "azbuka",
+  "name": "Азбука вкуса",
+  "category": "Продукты",
+  "aliases": [
+   "азбука вкуса",
+   "azbuka vkusa"
+  ],
+  "domains": [
+   "av.ru"
+  ],
+  "colors": [
+   "#2B2B2B",
+   "#55504A"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "globus",
+  "name": "Глобус",
+  "category": "Продукты",
+  "aliases": [
+   "глобус",
+   "globus"
+  ],
+  "domains": [
+   "globus.ru"
+  ],
+  "colors": [
+   "#FFD200",
+   "#F2A900"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "verny",
+  "name": "Верный",
+  "category": "Продукты",
+  "aliases": [
+   "верный"
+  ],
+  "domains": [
+   "verno-info.ru"
+  ],
+  "colors": [
+   "#E8332A",
+   "#8E0B12"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "fixprice",
+  "name": "Fix Price",
+  "category": "Товары для дома",
+  "aliases": [
+   "fix price",
+   "фикс прайс",
+   "fixprice"
+  ],
+  "domains": [
+   "fix-price.com",
+   "fix-price.ru"
+  ],
+  "colors": [
+   "#0067B1",
+   "#003F73"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "kb",
+  "name": "Красное&Белое",
+  "category": "Напитки",
+  "aliases": [
+   "красное&белое",
+   "красное и белое",
+   "krasnoe"
+  ],
+  "domains": [
+   "krasnoeibeloe.ru",
+   "kbshop.ru"
+  ],
+  "colors": [
+   "#B4121B",
+   "#5E0A0E"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "bristol",
+  "name": "Бристоль",
+  "category": "Напитки",
+  "aliases": [
+   "бристоль",
+   "bristol"
+  ],
+  "domains": [
+   "bristol.ru"
+  ],
+  "colors": [
+   "#1B3C8C",
+   "#0F2455"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "winelab",
+  "name": "ВинЛаб",
+  "category": "Напитки",
+  "aliases": [
+   "винлаб",
+   "winelab"
+  ],
+  "domains": [
+   "winelab.ru"
+  ],
+  "colors": [
+   "#7A1E3A",
+   "#3D0F1D"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "letu",
+  "name": "Л'Этуаль",
+  "category": "Красота",
+  "aliases": [
+   "л'этуаль",
+   "летуаль",
+   "letu",
+   "l'etoile"
+  ],
+  "domains": [
+   "letu.ru"
+  ],
+  "colors": [
+   "#1C1C1C",
+   "#4A3A40"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "goldapple",
+  "name": "Золотое яблоко",
+  "category": "Красота",
+  "aliases": [
+   "золотое яблоко",
+   "goldapple",
+   "gold apple"
+  ],
+  "domains": [
+   "goldapple.ru"
+  ],
+  "colors": [
+   "#1A1A1A",
+   "#6B5A2E"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "rivegauche",
+  "name": "Рив Гош",
+  "category": "Красота",
+  "aliases": [
+   "рив гош",
+   "rive gauche",
+   "rivegauche"
+  ],
+  "domains": [
+   "rivegauche.ru"
+  ],
+  "colors": [
+   "#1A1A1A",
+   "#8C1D40"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "podrygka",
+  "name": "Подружка",
+  "category": "Красота",
+  "aliases": [
+   "подружка",
+   "podrygka",
+   "podruzhka"
+  ],
+  "domains": [
+   "podrygka.ru"
+  ],
+  "colors": [
+   "#E6007E",
+   "#A1005A"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "sportmaster",
+  "name": "Спортмастер",
+  "category": "Спорт",
+  "aliases": [
+   "спортмастер",
+   "sportmaster"
+  ],
+  "domains": [
+   "sportmaster.ru"
+  ],
+  "colors": [
+   "#0062CC",
+   "#003F8A"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "decathlon",
+  "name": "Decathlon / Desport",
+  "category": "Спорт",
+  "aliases": [
+   "decathlon",
+   "декатлон",
+   "desport"
+  ],
+  "domains": [
+   "decathlon.ru",
+   "desport.ru",
+   "decathlon.com"
+  ],
+  "colors": [
+   "#0082C3",
+   "#00558A"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "gloria",
+  "name": "Gloria Jeans",
+  "category": "Одежда",
+  "aliases": [
+   "gloria jeans",
+   "глория джинс"
+  ],
+  "domains": [
+   "gloria-jeans.ru"
+  ],
+  "colors": [
+   "#2B3A55",
+   "#0E151E"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "ostin",
+  "name": "O'STIN",
+  "category": "Одежда",
+  "aliases": [
+   "o'stin",
+   "ostin",
+   "остин"
+  ],
+  "domains": [
+   "ostin.com"
+  ],
+  "colors": [
+   "#2A2A28",
+   "#555552"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "familia",
+  "name": "Familia",
+  "category": "Одежда",
+  "aliases": [
+   "familia",
+   "фамилия"
+  ],
+  "domains": [
+   "famil.ru"
+  ],
+  "colors": [
+   "#E5007D",
+   "#8F004E"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "hm",
+  "name": "H&M",
+  "category": "Одежда",
+  "aliases": [
+   "h&m"
+  ],
+  "domains": [
+   "hm.com"
+  ],
+  "colors": [
+   "#CC071E",
+   "#7D0412"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "detmir",
+  "name": "Детский мир",
+  "category": "Детям",
+  "aliases": [
+   "детский мир",
+   "detmir"
+  ],
+  "domains": [
+   "detmir.ru"
+  ],
+  "colors": [
+   "#2A5BD7",
+   "#1A3A8F"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "mvideo",
+  "name": "М.Видео",
+  "category": "Электроника",
+  "aliases": [
+   "м.видео",
+   "мвидео",
+   "mvideo"
+  ],
+  "domains": [
+   "mvideo.ru"
+  ],
+  "colors": [
+   "#E10000",
+   "#8F0000"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "eldorado",
+  "name": "Эльдорадо",
+  "category": "Электроника",
+  "aliases": [
+   "эльдорадо",
+   "eldorado"
+  ],
+  "domains": [
+   "eldorado.ru"
+  ],
+  "colors": [
+   "#76B82A",
+   "#3F7F00"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "dns",
+  "name": "DNS",
+  "category": "Электроника",
+  "aliases": [
+   "dns-shop",
+   "днс"
+  ],
+  "domains": [
+   "dns-shop.ru"
+  ],
+  "colors": [
+   "#FC8507",
+   "#C85A00"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "lemana",
+  "name": "Лемана ПРО (Леруа Мерлен)",
+  "category": "Дом и ремонт",
+  "aliases": [
+   "лемана про",
+   "леруа мерлен",
+   "leroy merlin",
+   "lemana"
+  ],
+  "domains": [
+   "lemanapro.ru",
+   "leroymerlin.ru"
+  ],
+  "colors": [
+   "#67B32E",
+   "#3C7A16"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "obi",
+  "name": "OBI",
+  "category": "Дом и ремонт",
+  "aliases": [
+   "obi"
+  ],
+  "domains": [
+   "obi.ru"
+  ],
+  "colors": [
+   "#FF7D00",
+   "#C45A00"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "petrovich",
+  "name": "Петрович",
+  "category": "Дом и ремонт",
+  "aliases": [
+   "петрович",
+   "petrovich"
+  ],
+  "domains": [
+   "petrovich.ru"
+  ],
+  "colors": [
+   "#E41E26",
+   "#8D1218"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "hoff",
+  "name": "Hoff",
+  "category": "Дом и ремонт",
+  "aliases": [
+   "hoff",
+   "хофф"
+  ],
+  "domains": [
+   "hoff.ru"
+  ],
+  "colors": [
+   "#F05A28",
+   "#A8361A"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "ikea",
+  "name": "IKEA Family",
+  "category": "Дом и ремонт",
+  "aliases": [
+   "ikea",
+   "икеа"
+  ],
+  "domains": [
+   "ikea.com"
+  ],
+  "colors": [
+   "#0058A3",
+   "#003B6F"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "chitai",
+  "name": "Читай-город",
+  "category": "Книги",
+  "aliases": [
+   "читай-город",
+   "читай город",
+   "chitai-gorod"
+  ],
+  "domains": [
+   "chitai-gorod.ru"
+  ],
+  "colors": [
+   "#E6332A",
+   "#9E1F18"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "rigla",
+  "name": "Ригла",
+  "category": "Аптеки",
+  "aliases": [
+   "ригла",
+   "rigla"
+  ],
+  "domains": [
+   "rigla.ru"
+  ],
+  "colors": [
+   "#0072BC",
+   "#004A7C"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "a366",
+  "name": "Аптеки 36,6",
+  "category": "Аптеки",
+  "aliases": [
+   "аптеки 36"
+  ],
+  "domains": [
+   "366.ru"
+  ],
+  "colors": [
+   "#E30613",
+   "#9A0410"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "gorzdrav",
+  "name": "Горздрав",
+  "category": "Аптеки",
+  "aliases": [
+   "горздрав",
+   "gorzdrav"
+  ],
+  "domains": [
+   "gorzdrav.org"
+  ],
+  "colors": [
+   "#00A651",
+   "#006B34"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "stolichki",
+  "name": "Столички",
+  "category": "Аптеки",
+  "aliases": [
+   "столички",
+   "stolichki"
+  ],
+  "domains": [
+   "stolichki.ru"
+  ],
+  "colors": [
+   "#E41F2D",
+   "#9A121C"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "aprel",
+  "name": "Аптека Апрель",
+  "category": "Аптеки",
+  "aliases": [
+   "апрель",
+   "apteka-april"
+  ],
+  "domains": [
+   "apteka-april.ru"
+  ],
+  "colors": [
+   "#00A0E3",
+   "#0067A0"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "lukoil",
+  "name": "Лукойл",
+  "category": "АЗС",
+  "aliases": [
+   "лукойл",
+   "lukoil",
+   "licard"
+  ],
+  "domains": [
+   "lukoil.ru",
+   "licard.ru"
+  ],
+  "colors": [
+   "#E4002B",
+   "#9C001D"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "gpn",
+  "name": "Газпромнефть",
+  "category": "АЗС",
+  "aliases": [
+   "газпромнефть",
+   "gazpromneft",
+   "нам по пути"
+  ],
+  "domains": [
+   "gpnbonus.ru",
+   "gazprom-neft.ru"
+  ],
+  "colors": [
+   "#0079C1",
+   "#004B7A"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "rosneft",
+  "name": "Роснефть",
+  "category": "АЗС",
+  "aliases": [
+   "роснефть",
+   "rosneft",
+   "семейная команда"
+  ],
+  "domains": [
+   "komandacard.ru",
+   "rosneft.ru"
+  ],
+  "colors": [
+   "#FFC20E",
+   "#F39200"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "tatneft",
+  "name": "Татнефть",
+  "category": "АЗС",
+  "aliases": [
+   "татнефть",
+   "tatneft"
+  ],
+  "domains": [
+   "tatneft.ru"
+  ],
+  "colors": [
+   "#00843D",
+   "#005A2A"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "shoko",
+  "name": "Шоколадница",
+  "category": "Кафе",
+  "aliases": [
+   "шоколадница",
+   "shokoladnica"
+  ],
+  "domains": [
+   "shoko.ru"
+  ],
+  "colors": [
+   "#6B3A22",
+   "#2E160C"
+  ],
+  "numberPatterns": []
+ },
+ {
+  "id": "lidl",
+  "name": "Lidl Plus",
+  "category": "Продукты",
+  "aliases": [
+   "lidl"
+  ],
+  "domains": [
+   "lidl.com",
+   "lidl.de"
+  ],
+  "colors": [
+   "#0050AA",
+   "#00326B"
+  ],
+  "numberPatterns": []
+ }
+]
