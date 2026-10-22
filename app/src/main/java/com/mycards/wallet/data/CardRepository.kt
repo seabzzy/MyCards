@@ -18,10 +18,17 @@ class CardRepository(context: Context) {
     private val _cards = MutableStateFlow(load())
     val cards: StateFlow<List<LoyaltyCard>> = _cards.asStateFlow()
 
-    private fun load(): List<LoyaltyCard> = try {
-        CardJson.decode(String(file.readFully(), Charsets.UTF_8))
-    } catch (e: Exception) {
-        emptyList()
+    private fun load(): List<LoyaltyCard> {
+        if (!file.baseFile.exists()) return emptyList()
+        return try {
+            CardJson.decode(String(file.readFully(), Charsets.UTF_8))
+        } catch (e: Exception) {
+            // Файл повреждён: сохраняем его копию, чтобы ничего не потерять при следующей записи.
+            runCatching {
+                file.baseFile.copyTo(File(file.baseFile.parentFile, "cards-broken-${System.currentTimeMillis()}.json"))
+            }
+            emptyList()
+        }
     }
 
     @Synchronized

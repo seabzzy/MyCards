@@ -46,6 +46,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mycards.wallet.data.CardDraft
 import com.mycards.wallet.ui.AppViewModel
 import com.mycards.wallet.ui.screens.DetailScreen
+import com.mycards.wallet.ui.screens.DocumentViewerScreen
+import com.mycards.wallet.ui.screens.DocumentsScreen
+import com.mycards.wallet.ui.screens.MenuScreen
 import com.mycards.wallet.ui.screens.HomeScreen
 import com.mycards.wallet.ui.screens.ReviewScreen
 import com.mycards.wallet.ui.screens.ScannerScreen
@@ -83,6 +86,9 @@ private sealed interface Screen {
     data class Review(val draft: CardDraft, val key: Long = System.nanoTime()) : Screen
     data class Detail(val id: String) : Screen
     data object Settings : Screen
+    data object Menu : Screen
+    data object Documents : Screen
+    data class Document(val id: String) : Screen
 }
 
 @Composable
@@ -90,7 +96,7 @@ private fun AppRoot(sharedImage: MutableState<Uri?>) {
     val vm: AppViewModel = viewModel()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val stack = remember { mutableStateListOf<Screen>(Screen.Home) }
+    val stack = remember { mutableStateListOf<Screen>(Screen.Menu) }
     var forward by remember { mutableStateOf(true) }
 
     fun push(s: Screen) { forward = true; stack.add(s) }
@@ -146,8 +152,24 @@ private fun AppRoot(sharedImage: MutableState<Uri?>) {
             label = "nav",
         ) { screen ->
             when (screen) {
+                Screen.Menu -> MenuScreen(
+                    vm = vm,
+                    onCards = { push(Screen.Home) },
+                    onDocuments = { push(Screen.Documents) },
+                )
+                Screen.Documents -> DocumentsScreen(
+                    vm = vm,
+                    onBack = { pop() },
+                    onOpen = { push(Screen.Document(it.id)) },
+                )
+                is Screen.Document -> DocumentViewerScreen(
+                    vm = vm,
+                    docId = screen.id,
+                    onBack = { pop() },
+                )
                 Screen.Home -> HomeScreen(
                     vm = vm,
+                    onBack = { pop() },
                     onOpen = { push(Screen.Detail(it.id)) },
                     onScan = { push(Screen.Scanner) },
                     onPickImage = { pickImage() },

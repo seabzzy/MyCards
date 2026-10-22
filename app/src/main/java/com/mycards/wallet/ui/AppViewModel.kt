@@ -13,6 +13,8 @@ import com.mycards.wallet.data.BrandCatalog
 import com.mycards.wallet.data.CardDraft
 import com.mycards.wallet.data.CardRepository
 import com.mycards.wallet.data.DesignStore
+import com.mycards.wallet.data.DocumentRepository
+import com.mycards.wallet.data.PdfDocument
 import com.mycards.wallet.data.Logos
 import com.mycards.wallet.data.LoyaltyCard
 import com.mycards.wallet.data.OnlineLookup
@@ -49,6 +51,25 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val settings = Settings(app)
 
     val cards: StateFlow<List<LoyaltyCard>> = repo.cards
+
+    private val documentRepo = DocumentRepository(app)
+    val documents: StateFlow<List<PdfDocument>> = documentRepo.documents
+
+    fun documentFile(id: String) = documentRepo.fileOf(id)
+
+    /** Добавляет PDF в приложение. Возвращает false, если файл не удалось открыть. */
+    suspend fun addDocument(uri: Uri): Boolean = withContext(Dispatchers.IO) {
+        try {
+            documentRepo.add(getApplication(), uri)
+            true
+        } catch (e: IllegalArgumentException) {
+            _messages.tryEmit(e.message ?: "Не удалось добавить файл")
+            false
+        } catch (e: Exception) {
+            _messages.tryEmit("Не удалось добавить файл")
+            false
+        }
+    }
 
     private val _online = MutableStateFlow<OnlineLookup?>(null)
     /** Результат проверки ссылки из QR-кода для текущего черновика. */

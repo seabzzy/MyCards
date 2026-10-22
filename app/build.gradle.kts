@@ -14,19 +14,29 @@ android {
         applicationId = "com.mycards.wallet"
         minSdk = 29
         targetSdk = 36          // Android 16
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
 
         // vivo X200 Pro mini — 64-битный ARM. Оставляем только эту архитектуру,
         // чтобы APK был компактнее (модели ML Kit встроены в приложение).
         ndk { abiFilters += listOf("arm64-v8a") }
     }
 
+    // Постоянный ключ подписи. Пока он один и тот же, обновления ставятся поверх старой версии,
+    // и данные приложения (карты, документы) сохраняются. Ключ лежит в репозитории — не меняйте его.
+    signingConfigs {
+        create("release") {
+            storeFile = file("mycards-release.jks")
+            storePassword = "a87c98d1749b7b43e4e5b7c31e0123aa"
+            keyAlias = "mycards"
+            keyPassword = "a87c98d1749b7b43e4e5b7c31e0123aa"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
-            // Подписываем отладочным ключом, чтобы release-APK сразу ставился на телефон.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 

@@ -68,6 +68,7 @@ fun HomeScreen(
     onExport: () -> Unit,
     onImport: () -> Unit,
     onSettings: () -> Unit,
+    onBack: () -> Unit,
 ) {
     val p = LocalOrigin.current
     val cards by vm.cards.collectAsStateWithLifecycle()
@@ -90,6 +91,8 @@ fun HomeScreen(
         ) {
             Spacer(Modifier.height(18.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
+                CircleButton(Glyph.Back, onBack)
+                Spacer(Modifier.width(8.dp))
                 Column(Modifier.weight(1f).padding(start = 4.dp)) {
                     Text("Карты", color = p.text, fontSize = 34.sp, fontWeight = FontWeight.Bold)
                     Text(
