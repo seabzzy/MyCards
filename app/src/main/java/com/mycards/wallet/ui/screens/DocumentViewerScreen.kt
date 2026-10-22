@@ -83,8 +83,11 @@ fun DocumentViewerScreen(vm: AppViewModel, docId: String, onBack: () -> Unit) {
         value = if (file == null) Result.failure(IOException("Файл не найден"))
         else withContext(Dispatchers.IO) { runCatching { PdfSession.open(file) } }
     }
-    DisposableEffect(session) {
-        onDispose { session?.getOrNull()?.close() }
+    // Закрываем именно ту сессию, которая была открыта в этом эффекте
+    // (раньше здесь читалось уже новое значение, и только что открытый документ сразу закрывался).
+    val openedSession = session
+    DisposableEffect(openedSession) {
+        onDispose { openedSession?.getOrNull()?.close() }
     }
 
     // Документ удалён — возвращаемся к списку.
