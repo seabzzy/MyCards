@@ -1,7 +1,7 @@
 package com.mycards.wallet.pdf
 
 import android.graphics.Bitmap
-import android.graphics.PdfRenderer
+import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
