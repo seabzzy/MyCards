@@ -57,6 +57,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun documentFile(id: String) = documentRepo.fileOf(id)
 
+    fun renameDocument(id: String, title: String) {
+        if (title.isNotBlank()) documentRepo.rename(id, title.trim())
+    }
+
+    fun deleteDocument(id: String) = documentRepo.delete(id)
+
     /** Добавляет PDF в приложение. Возвращает false, если файл не удалось открыть. */
     suspend fun addDocument(uri: Uri): Boolean = withContext(Dispatchers.IO) {
         try {

@@ -73,6 +73,20 @@ class DocumentRepository(context: Context) {
         return doc
     }
 
+    /** Переименование: меняется только отображаемое название, файл остаётся. */
+    @Synchronized
+    fun rename(id: String, title: String) {
+        persist(_documents.value.map { if (it.id == id) it.copy(title = title) else it })
+    }
+
+    /** Удаление: убирает запись и сам файл PDF. */
+    @Synchronized
+    fun delete(id: String) {
+        val doc = _documents.value.firstOrNull { it.id == id } ?: return
+        File(dir, doc.fileName).delete()
+        persist(_documents.value.filterNot { it.id == id })
+    }
+
     private fun load(): List<PdfDocument> {
         if (!index.baseFile.exists()) return emptyList()
         return try {
