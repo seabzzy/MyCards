@@ -33,6 +33,18 @@ def hits(links):
         if any(a in host for a in AGG): continue
         if "https://"+host not in sites: sites.append("https://"+host)
     return sites, vk
+TR = dict(zip("абвгдеёжзийклмнопрстуфхцчшщъыьэюя", ["a","b","v","g","d","e","e","zh","z","i","y","k","l","m","n","o","p","r","s","t","u","f","h","ts","ch","sh","sch","","y","","e","yu","ya"]))
+def translit(s): return "".join(TR.get(c, c if (c.isascii() and c.isalnum()) else "") for c in s.lower())
+def norm(s): return "".join(c for c in s.lower().replace("ё","е") if c.isalnum())
+def looks(site, q):
+    host = urllib.parse.urlparse(site).hostname or ""
+    lat = translit(q)
+    if len(lat) >= 4 and lat[:6] in host: return "host"
+    try: page = get(site)
+    except Exception as e: return False
+    t = re.search(r"<title[^>]*>(.*?)</title>", page, re.I | re.S); t = t.group(1) if t else ""
+    sn = re.search(r"property=[\"']og:site_name[\"'][^>]+content=[\"']([^\"']+)", page); sn = sn.group(1) if sn else ""
+    return ("title:" + html.unescape(t).strip()[:60]) if norm(q) in norm(html.unescape(t + " " + sn)) else False
 for name in sys.argv[1:]:
     q=urllib.parse.quote(name+" магазин официальный сайт")
     print("==", name)
@@ -40,5 +52,9 @@ for name in sys.argv[1:]:
         time.sleep(4)
         try:
             links=parse(get(url)); s,v=hits(links)
-            print("  [%s] links=%d sites=%s vk=%s" % (eng,len(links),s[:3],v[:2]))
+            print("  [%s] links=%d sites=%s vk=%s" % (eng,len(links),s[:4],v[:2]))
+            if eng == "ddg":
+                for site in s[:4]:
+                    r = looks(site, name); print("      check", site, "->", r)
+                    if r: print("      CHOSEN:", site); break
         except Exception as e: print("  [%s] error %s"%(eng,e))
