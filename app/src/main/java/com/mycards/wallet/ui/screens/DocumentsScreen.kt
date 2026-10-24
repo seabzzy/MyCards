@@ -39,12 +39,20 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mycards.wallet.data.PdfDocument
 import com.mycards.wallet.data.inListOrder
-import com.mycards.wallet.ui.components.ActionSheet
 import com.mycards.wallet.ui.components.ConfirmDeleteDialog
 import com.mycards.wallet.ui.components.RenameDialog
-import com.mycards.wallet.ui.components.ReorderDialog
-import com.mycards.wallet.ui.components.ReorderItem
 import com.mycards.wallet.ui.components.SheetAction
+import com.mycards.wallet.ui.components.ItemPopupMenu
+import com.mycards.wallet.ui.components.longPressMenuAndDrag
+import androidx.compose.foundation.layout.offset
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.zIndex
+import kotlin.math.roundToInt
 import com.mycards.wallet.ui.AppViewModel
 import com.mycards.wallet.ui.components.Glyph
 import com.mycards.wallet.ui.components.GlyphIcon
@@ -63,10 +71,14 @@ fun DocumentsScreen(vm: AppViewModel, onBack: () -> Unit, onOpen: (PdfDocument) 
     val docs by vm.documents.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var adding by remember { mutableStateOf(false) }
-    var actionDoc by remember { mutableStateOf<PdfDocument?>(null) }
+    var menuFor by remember { mutableStateOf<String?>(null) }
+    var menuAt by remember { mutableStateOf(IntOffset.Zero) }
+    var draggingId by remember { mutableStateOf<String?>(null) }
+    var dragOffset by remember { mutableFloatStateOf(0f) }
+    var rowHeight by remember { mutableFloatStateOf(1f) }
+    val live = remember { mutableStateListOf<String>() }
     var renameTarget by remember { mutableStateOf<PdfDocument?>(null) }
     var deleteTarget by remember { mutableStateOf<PdfDocument?>(null) }
-    var reorder by remember { mutableStateOf(false) }
 
     val picker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -123,9 +135,73 @@ fun DocumentsScreen(vm: AppViewModel, onBack: () -> Unit, onOpen: (PdfDocument) 
                             .clip(RoundedCornerShape(24.dp))
                             .background(p.surface),
                     ) {
-                        docs.inListOrder().forEachIndexed { i, doc ->
-                            if (i > 0) HorizontalDivider(Modifier.padding(start = 76.dp), color = p.divider)
-                            DocumentRow(doc, onLongClick = { actionDoc = doc }) { onOpen(doc) }
+                        val sorted = docs.inListOrder()
+                        val pinnedCount = sorted.count { it.pinned }
+                        val shownDocs = if (draggingId != null) {
+                            live.mapNotNull { id -> sorted.firstOrNull { it.id == id } }
+                        } else sorted
+                        shownDocs.forEachIndexed { i, doc ->
+                            key(doc.id) {
+                                val dragging = doc.id == draggingId
+                                Column(
+                                    Modifier
+                                        .zIndex(if (dragging) 1f else 0f)
+                                        .graphicsLayer { translationY = if (dragging) dragOffset else 0f }
+                                        .background(if (dragging) p.surfaceHigh else p.surface)
+                                        .onSizeChanged { if (!dragging) rowHeight = it.height.toFloat().coerceAtLeast(1f) },
+                                ) {
+                                    if (i > 0) HorizontalDivider(Modifier.padding(start = 76.dp), color = p.divider)
+                                    Box {
+                                        DocumentRow(
+                                            doc,
+                                            gesture = Modifier.longPressMenuAndDrag(
+                                                key = doc.id,
+                                                canDrag = doc.pinned && pinnedCount >= 2,
+                                                onLongPress = { pos ->
+                                                    menuAt = IntOffset(pos.x.roundToInt(), pos.y.roundToInt())
+                                                    menuFor = doc.id
+                                                },
+                                                onDragStart = {
+                                                    menuFor = null
+                                                    live.clear()
+                                                    live.addAll(sorted.map { it.id })
+                                                    draggingId = doc.id
+                                                    dragOffset = 0f
+                                                },
+                                                onDrag = { dy ->
+                                                    dragOffset += dy
+                                                    val from = live.indexOf(doc.id)
+                                                    if (dragOffset > rowHeight / 2 && from in 0 until pinnedCount - 1) {
+                                                        live.add(from + 1, live.removeAt(from))
+                                                        dragOffset -= rowHeight
+                                                    } else if (dragOffset < -rowHeight / 2 && from > 0) {
+                                                        live.add(from - 1, live.removeAt(from))
+                                                        dragOffset += rowHeight
+                                                    }
+                                                },
+                                                onDragEnd = {
+                                                    vm.reorderPinnedDocuments(live.take(pinnedCount))
+                                                    draggingId = null
+                                                    dragOffset = 0f
+                                                },
+                                            ),
+                                        ) { onOpen(doc) }
+                                        Box(Modifier.offset { menuAt }) {
+                                            ItemPopupMenu(
+                                                expanded = menuFor == doc.id,
+                                                actions = listOf(
+                                                    SheetAction(if (doc.pinned) "Открепить" else "Закрепить", Glyph.Pin) {
+                                                        vm.setDocumentPinned(doc.id, !doc.pinned)
+                                                    },
+                                                    SheetAction("Переименовать", Glyph.Edit) { renameTarget = doc },
+                                                    SheetAction("Удалить", Glyph.Trash, danger = true) { deleteTarget = doc },
+                                                ),
+                                                onDismiss = { menuFor = null },
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                     Spacer(Modifier.height(96.dp))
@@ -147,23 +223,6 @@ fun DocumentsScreen(vm: AppViewModel, onBack: () -> Unit, onOpen: (PdfDocument) 
         }
     }
 
-    actionDoc?.let { doc ->
-        val pinnedCount = docs.count { it.pinned }
-        ActionSheet(
-            title = doc.title,
-            actions = buildList {
-                add(SheetAction(if (doc.pinned) "Открепить" else "Закрепить", Glyph.Pin) {
-                    vm.setDocumentPinned(doc.id, !doc.pinned)
-                })
-                if (doc.pinned && pinnedCount >= 2) {
-                    add(SheetAction("Изменить порядок закреплённых", Glyph.Drag) { reorder = true })
-                }
-                add(SheetAction("Переименовать", Glyph.Edit) { renameTarget = doc })
-                add(SheetAction("Удалить", Glyph.Trash, danger = true) { deleteTarget = doc })
-            },
-            onDismiss = { actionDoc = null },
-        )
-    }
     renameTarget?.let { doc ->
         RenameDialog(
             current = doc.title,
@@ -179,24 +238,18 @@ fun DocumentsScreen(vm: AppViewModel, onBack: () -> Unit, onOpen: (PdfDocument) 
             onDismiss = { deleteTarget = null },
         )
     }
-    if (reorder) {
-        ReorderDialog(
-            title = "Порядок закреплённых",
-            items = docs.filter { it.pinned }.sortedBy { it.pinOrder }.map { ReorderItem(it.id, it.title) },
-            onDismiss = { reorder = false },
-            onSave = { vm.reorderPinnedDocuments(it); reorder = false },
-        )
-    }
+
 }
 
 @Composable
-private fun DocumentRow(doc: PdfDocument, onLongClick: () -> Unit, onClick: () -> Unit) {
+private fun DocumentRow(doc: PdfDocument, gesture: Modifier, onClick: () -> Unit) {
     val p = LocalOrigin.current
     val date = remember(doc.addedAt) { SimpleDateFormat("d MMM yyyy", Locale("ru")).format(doc.addedAt) }
     Row(
         Modifier
             .fillMaxWidth()
-            .bounceClick(onLongClick = onLongClick, onClick = onClick)
+            .bounceClick(onClick = onClick)
+            .then(gesture)
             .padding(horizontal = 18.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

@@ -48,11 +48,8 @@ import com.mycards.wallet.data.CardFormat
 import com.mycards.wallet.data.CardText
 import com.mycards.wallet.data.LoyaltyCard
 import com.mycards.wallet.data.inWalletOrder
-import com.mycards.wallet.ui.components.ActionSheet
 import com.mycards.wallet.ui.components.ConfirmDeleteDialog
 import com.mycards.wallet.ui.components.RenameDialog
-import com.mycards.wallet.ui.components.ReorderDialog
-import com.mycards.wallet.ui.components.ReorderItem
 import com.mycards.wallet.ui.components.SheetAction
 import com.mycards.wallet.ui.AppViewModel
 import com.mycards.wallet.ui.components.CardStack
@@ -82,10 +79,8 @@ fun HomeScreen(
     var query by rememberSaveable { mutableStateOf("") }
     var showAdd by remember { mutableStateOf(false) }
     var menu by remember { mutableStateOf(false) }
-    var actionCard by remember { mutableStateOf<LoyaltyCard?>(null) }
     var renameTarget by remember { mutableStateOf<LoyaltyCard?>(null) }
     var deleteTarget by remember { mutableStateOf<LoyaltyCard?>(null) }
-    var reorder by remember { mutableStateOf(false) }
 
     val shown = remember(cards, query) {
         cards.inWalletOrder()
@@ -135,7 +130,22 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth().padding(top = 40.dp),
                     textAlign = TextAlign.Center,
                 )
-                else -> CardStack(shown, onOpen, onLongClick = { actionCard = it })
+                else -> CardStack(
+                    cards = shown,
+                    onClick = onOpen,
+                    menuActions = { card ->
+                        listOf(
+                            SheetAction(if (card.pinned) "Открепить" else "Закрепить", Glyph.Pin) {
+                                vm.setCardPinned(card.id, !card.pinned)
+                            },
+                            SheetAction("Переименовать", Glyph.Edit) { renameTarget = card },
+                            SheetAction("Удалить", Glyph.Trash, danger = true) { deleteTarget = card },
+                        )
+                    },
+                    // во время поиска список неполный — порядок не меняем
+                    reorderEnabled = query.isBlank(),
+                    onReorderPinned = { vm.reorderPinnedCards(it) },
+                )
             }
             Spacer(Modifier.navigationBarsPadding().height(130.dp))
         }
@@ -170,23 +180,6 @@ fun HomeScreen(
         )
     }
 
-    actionCard?.let { card ->
-        val pinnedCount = cards.count { it.pinned }
-        ActionSheet(
-            title = card.name,
-            actions = buildList {
-                add(SheetAction(if (card.pinned) "Открепить" else "Закрепить", Glyph.Pin) {
-                    vm.setCardPinned(card.id, !card.pinned)
-                })
-                if (card.pinned && pinnedCount >= 2) {
-                    add(SheetAction("Изменить порядок закреплённых", Glyph.Drag) { reorder = true })
-                }
-                add(SheetAction("Переименовать", Glyph.Edit) { renameTarget = card })
-                add(SheetAction("Удалить", Glyph.Trash, danger = true) { deleteTarget = card })
-            },
-            onDismiss = { actionCard = null },
-        )
-    }
     renameTarget?.let { card ->
         RenameDialog(
             current = card.name,
@@ -202,15 +195,7 @@ fun HomeScreen(
             onDismiss = { deleteTarget = null },
         )
     }
-    if (reorder) {
-        ReorderDialog(
-            title = "Порядок закреплённых",
-            items = cards.filter { it.pinned }.sortedBy { it.pinOrder }
-                .map { ReorderItem(it.id, it.name, it.colorStart, it.colorEnd) },
-            onDismiss = { reorder = false },
-            onSave = { vm.reorderPinnedCards(it); reorder = false },
-        )
-    }
+
 }
 
 @Composable
