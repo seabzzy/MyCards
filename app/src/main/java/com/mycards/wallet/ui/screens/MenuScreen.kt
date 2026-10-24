@@ -17,6 +17,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import android.os.SystemClock
+import android.widget.Toast
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +47,9 @@ fun MenuScreen(vm: AppViewModel, onCards: () -> Unit, onDocuments: () -> Unit) {
     val p = LocalOrigin.current
     val cards by vm.cards.collectAsStateWithLifecycle()
     val docs by vm.documents.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    var taps by remember { mutableIntStateOf(0) }
+    var lastTap by remember { mutableLongStateOf(0L) }
 
     Column(
         Modifier
@@ -50,7 +62,18 @@ fun MenuScreen(vm: AppViewModel, onCards: () -> Unit, onDocuments: () -> Unit) {
         Spacer(Modifier.height(18.dp))
         Text(
             "Главная", color = p.text, fontSize = 34.sp, fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = 4.dp),
+            modifier = Modifier
+                .padding(start = 4.dp)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                    // Пасхалка: три быстрых нажатия на заголовок
+                    val now = SystemClock.uptimeMillis()
+                    taps = if (now - lastTap < 600) taps + 1 else 1
+                    lastTap = now
+                    if (taps >= 3) {
+                        taps = 0
+                        Toast.makeText(context, "ты пидор", Toast.LENGTH_SHORT).show()
+                    }
+                },
         )
         Spacer(Modifier.height(24.dp))
         MenuTile(
@@ -65,6 +88,15 @@ fun MenuScreen(vm: AppViewModel, onCards: () -> Unit, onDocuments: () -> Unit) {
             title = "Документы",
             subtitle = if (docs.isEmpty()) "Пока пусто" else documentsCount(docs.size),
             onClick = onDocuments,
+        )
+        Spacer(Modifier.weight(1f))
+        Text(
+            "prod. by seabzzy",
+            color = p.textSecondary.copy(alpha = 0.45f),
+            fontSize = 11.sp,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(bottom = 10.dp),
         )
     }
 }

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Мои карты</string>
-    <string name="share_label">Добавить в «Мои карты»</string>
+    <string name="app_name">Помощник</string>
+    <string name="share_label">Добавить в «Помощник»</string>
 </resources>

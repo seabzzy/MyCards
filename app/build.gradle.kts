@@ -14,8 +14,8 @@ android {
         applicationId = "com.mycards.wallet"
         minSdk = 29
         targetSdk = 36          // Android 16
-        versionCode = 10
-        versionName = "1.9"
+        versionCode = 11
+        versionName = "2.0"
 
         // vivo X200 Pro mini и iQOO Neo 9S Pro+ — оба 64-битный ARM. Оставляем только эту
         // архитектуру, чтобы APK был компактнее (модели ML Kit встроены в приложение).
