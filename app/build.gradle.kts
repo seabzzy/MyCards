@@ -14,8 +14,8 @@ android {
         applicationId = "com.mycards.wallet"
         minSdk = 29
         targetSdk = 36          // Android 16
-        versionCode = 8
-        versionName = "1.7"
+        versionCode = 9
+        versionName = "1.8"
 
         // vivo X200 Pro mini — 64-битный ARM. Оставляем только эту архитектуру,
         // чтобы APK был компактнее (модели ML Kit встроены в приложение).

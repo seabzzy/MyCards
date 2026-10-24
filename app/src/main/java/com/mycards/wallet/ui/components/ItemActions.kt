@@ -74,8 +74,10 @@ fun Modifier.longPressMenuAndDrag(
     canDrag: Boolean,
     onLongPress: (Offset) -> Unit,
     onDragStart: () -> Unit,
-    onDrag: (Float) -> Unit,
+    onDrag: (Float) -> Unit = {},
     onDragEnd: () -> Unit,
+    /** Если задано — перетаскивание в любую сторону (для плитки), иначе только по вертикали. */
+    onDragOffset: ((Offset) -> Unit)? = null,
 ): Modifier = composed {
     val haptic = LocalHapticFeedback.current
     val slop = with(LocalDensity.current) { 8.dp.toPx() }
@@ -83,14 +85,15 @@ fun Modifier.longPressMenuAndDrag(
     val longPress by rememberUpdatedState(onLongPress)
     val start by rememberUpdatedState(onDragStart)
     val move by rememberUpdatedState(onDrag)
+    val moveOffset by rememberUpdatedState(onDragOffset)
     val end by rememberUpdatedState(onDragEnd)
 
     pointerInput(key) {
-        var total = 0f
+        var total = Offset.Zero
         var dragging = false
         detectDragGesturesAfterLongPress(
             onDragStart = { position ->
-                total = 0f
+                total = Offset.Zero
                 dragging = false
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 longPress(position)
@@ -106,14 +109,16 @@ fun Modifier.longPressMenuAndDrag(
         ) { change, amount ->
             change.consume()
             if (!dragAllowed) return@detectDragGesturesAfterLongPress
+            val free = moveOffset
             if (dragging) {
-                move(amount.y)
+                if (free != null) free(amount) else move(amount.y)
             } else {
-                total += amount.y
-                if (abs(total) > slop) {
+                total += amount
+                val distance = if (free != null) total.getDistance() else abs(total.y)
+                if (distance > slop) {
                     dragging = true
                     start()
-                    move(total)
+                    if (free != null) free(total) else move(total.y)
                 }
             }
         }

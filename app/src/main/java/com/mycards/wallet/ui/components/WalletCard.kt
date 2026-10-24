@@ -3,6 +3,8 @@ package com.mycards.wallet.ui.components
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -266,6 +268,178 @@ fun CardStack(
         else step * (placeables.size - 1) + placeables.last().height
         layout(constraints.maxWidth, height) {
             placeables.forEachIndexed { i, pl -> pl.place(0, i * step) }
+        }
+    }
+}
+
+
+/** Плитка карты, как в Google Wallet: фирменный цвет, логотип в белом круге, название. */
+@Composable
+fun CardTile(card: LoyaltyCard, modifier: Modifier = Modifier) {
+    val start = Color(card.colorStart)
+    val end = Color(card.colorEnd)
+    val onCard = if (lerp(start, end, 0.5f).luminance() > 0.5f) Color(0xFF17181C) else Color.White
+    val logo = remember(card.logoFile) { Logos.image(card.logoFile) }
+    Box(
+        modifier
+            .fillMaxSize()
+            .clip(RoundedCornerShape(24.dp))
+            .background(Brush.linearGradient(listOf(start, end))),
+    ) {
+        Canvas(Modifier.matchParentSize()) {
+            drawCircle(Color.White.copy(alpha = 0.10f), size.width * 0.55f, Offset(size.width * 0.8f, size.height * 0.1f))
+        }
+        Row(
+            Modifier
+                .fillMaxSize()
+                .padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (logo != null) {
+                LogoBadge(logo, size = 48.dp)
+            } else {
+                Box(
+                    Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(Color.White),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        card.name.trim().take(1).uppercase().ifEmpty { "•" },
+                        color = Color(0xFF3B3F4A), fontSize = 20.sp, fontWeight = FontWeight.Medium,
+                    )
+                }
+            }
+            Spacer(Modifier.width(10.dp))
+            Text(
+                card.name,
+                color = onCard,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (card.pinned) {
+            GlyphIcon(
+                Glyph.Pin, onCard.copy(alpha = 0.85f),
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(10.dp),
+                size = 14.dp,
+            )
+        }
+    }
+}
+
+/**
+ * Карты плиткой в два столбца. Касание — открыть, долгое нажатие — меню рядом с пальцем,
+ * долгое нажатие и перетаскивание — смена порядка закреплённых (в любую сторону).
+ */
+@Composable
+fun CardGrid(
+    cards: List<LoyaltyCard>,
+    onClick: (LoyaltyCard) -> Unit,
+    modifier: Modifier = Modifier,
+    menuActions: (LoyaltyCard) -> List<SheetAction> = { emptyList() },
+    reorderEnabled: Boolean = true,
+    onReorderPinned: (List<String>) -> Unit = {},
+) {
+    val density = LocalDensity.current
+    var menuFor by remember { mutableStateOf<String?>(null) }
+    var menuAt by remember { mutableStateOf(IntOffset.Zero) }
+    var draggingId by remember { mutableStateOf<String?>(null) }
+    var dragOffset by remember { mutableStateOf(Offset.Zero) }
+    val live = remember { mutableStateListOf<String>() }
+    val pinnedCount = cards.count { it.pinned }
+    val shown = if (draggingId != null) live.mapNotNull { id -> cards.firstOrNull { it.id == id } } else cards
+
+    BoxWithConstraints(modifier.fillMaxWidth()) {
+        val gap = with(density) { 12.dp.toPx() }
+        val cellW = (with(density) { maxWidth.toPx() } - gap) / 2f
+        val cellH = cellW * 0.62f
+        fun cellPos(i: Int) = Offset((i % 2) * (cellW + gap), (i / 2) * (cellH + gap))
+
+        Layout(
+            content = {
+                shown.forEach { card ->
+                    key(card.id) {
+                        val dragging = card.id == draggingId
+                        Box(
+                            Modifier
+                                .zIndex(if (dragging) 1f else 0f)
+                                .graphicsLayer {
+                                    translationX = if (dragging) dragOffset.x else 0f
+                                    translationY = if (dragging) dragOffset.y else 0f
+                                    val s = if (dragging) 1.05f else 1f
+                                    scaleX = s
+                                    scaleY = s
+                                },
+                        ) {
+                            CardTile(
+                                card,
+                                Modifier
+                                    .bounceClick { onClick(card) }
+                                    .longPressMenuAndDrag(
+                                        key = card.id,
+                                        canDrag = reorderEnabled && card.pinned && pinnedCount >= 2,
+                                        onLongPress = { pos ->
+                                            menuAt = IntOffset(pos.x.roundToInt(), pos.y.roundToInt())
+                                            menuFor = card.id
+                                        },
+                                        onDragStart = {
+                                            menuFor = null
+                                            live.clear()
+                                            live.addAll(cards.map { it.id })
+                                            draggingId = card.id
+                                            dragOffset = Offset.Zero
+                                        },
+                                        onDragOffset = { delta ->
+                                            dragOffset += delta
+                                            val from = live.indexOf(card.id)
+                                            if (from >= 0 && pinnedCount > 0) {
+                                                val origin = cellPos(from)
+                                                val center = origin + dragOffset + Offset(cellW / 2f, cellH / 2f)
+                                                val col = (center.x / (cellW + gap)).toInt().coerceIn(0, 1)
+                                                val row = (center.y / (cellH + gap)).toInt().coerceAtLeast(0)
+                                                val target = (row * 2 + col).coerceIn(0, pinnedCount - 1)
+                                                if (target != from) {
+                                                    live.add(target, live.removeAt(from))
+                                                    dragOffset -= cellPos(target) - origin
+                                                }
+                                            }
+                                        },
+                                        onDragEnd = {
+                                            onReorderPinned(live.take(pinnedCount))
+                                            draggingId = null
+                                            dragOffset = Offset.Zero
+                                        },
+                                    ),
+                            )
+                            Box(Modifier.offset { menuAt }) {
+                                ItemPopupMenu(
+                                    expanded = menuFor == card.id,
+                                    actions = menuActions(card),
+                                    onDismiss = { menuFor = null },
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+        ) { measurables, constraints ->
+            val w = cellW.roundToInt()
+            val h = cellH.roundToInt()
+            val placeables = measurables.map { it.measure(Constraints.fixed(w, h)) }
+            val rows = (placeables.size + 1) / 2
+            val height = if (rows == 0) 0 else (rows * cellH + (rows - 1) * gap).roundToInt()
+            layout(constraints.maxWidth, height) {
+                placeables.forEachIndexed { i, pl ->
+                    val pos = cellPos(i)
+                    pl.place(pos.x.roundToInt(), pos.y.roundToInt())
+                }
+            }
         }
     }
 }

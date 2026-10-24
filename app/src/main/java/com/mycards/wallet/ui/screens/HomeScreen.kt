@@ -52,7 +52,7 @@ import com.mycards.wallet.ui.components.ConfirmDeleteDialog
 import com.mycards.wallet.ui.components.RenameDialog
 import com.mycards.wallet.ui.components.SheetAction
 import com.mycards.wallet.ui.AppViewModel
-import com.mycards.wallet.ui.components.CardStack
+import com.mycards.wallet.ui.components.CardGrid
 import com.mycards.wallet.ui.components.CircleButton
 import com.mycards.wallet.ui.components.Glyph
 import com.mycards.wallet.ui.components.GlyphIcon
@@ -132,7 +132,7 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth().padding(top = 40.dp),
                     textAlign = TextAlign.Center,
                 )
-                else -> CardStack(
+                else -> CardGrid(
                     cards = shown,
                     onClick = onOpen,
                     menuActions = { card ->
