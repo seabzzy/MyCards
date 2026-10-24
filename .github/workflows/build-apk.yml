@@ -50,7 +50,7 @@ jobs:
 
       - name: Diagnose store lookup
         continue-on-error: true
-        run: python3 tools/check_stores.py "Магнит" "Пятёрочка" "Перекрёсток" "Лента" "Порядок" > stores.txt 2>&1 || true
+        run: python3 tools/check_stores.py "Пятёрочка" "Магнит" "Лента" "Перекрёсток" > stores.txt 2>&1 || true
 
       # Результат (APK или лог ошибки) кладётся в ветку «builds» —
       # оттуда его забирает Claude и присылает в чат.

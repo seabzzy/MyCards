@@ -2,6 +2,7 @@
 import json, re, sys, time, urllib.parse, urllib.request
 
 UA = {"User-Agent": "MyCards/1.0 (Android; personal loyalty-card wallet)"}
+BROWSER = {"User-Agent": "Mozilla/5.0 (Linux; Android 16; vivo X200 Pro mini) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"}
 BUSINESS = re.compile(
     "сет[ьи]|магазин|ритейл|розничн|супермаркет|гипермаркет|дискаунтер|аптек|ресторан|кафе|кофейн|"
     "заправ|азс|бренд|компани|торгов|банк|retail|chain|store|supermarket|pharmacy|restaurant|company|brand|shop", re.I)
@@ -40,7 +41,7 @@ def site_info(url):
     if not url.startswith("http"):
         url = "https://" + url
     try:
-        req = urllib.request.Request(url, headers={**UA, "Accept": "text/html", "Accept-Language": "ru,en;q=0.8"})
+        req = urllib.request.Request(url, headers={**BROWSER, "Accept": "text/html", "Accept-Language": "ru,en;q=0.8"})
         with urllib.request.urlopen(req, timeout=20) as r:
             html = r.read(600 * 1024).decode("utf-8", "ignore")
             final = r.geturl()
@@ -55,6 +56,19 @@ def site_info(url):
             if m:
                 icons.append(m.group(1))
     return "final=%s theme=%s icons=%s" % (final, theme[:1], icons[:4])
+
+
+def s2(url):
+    host = urllib.parse.urlparse(url if url.startswith("http") else "https://" + url).hostname
+    try:
+        req = urllib.request.Request("https://www.google.com/s2/favicons?domain=%s&sz=256" % host, headers=BROWSER)
+        with urllib.request.urlopen(req, timeout=20) as r:
+            b = r.read()
+            ctype = r.headers.get("Content-Type")
+        size = (int.from_bytes(b[16:20], "big"), int.from_bytes(b[20:24], "big")) if b[:8] == b"\x89PNG\r\n\x1a\n" else "?"
+        return "google icon %s %s bytes, size %s" % (ctype, len(b), size)
+    except Exception as e:
+        return "google icon error: %s" % e
 
 
 for q in sys.argv[1:]:
@@ -83,10 +97,12 @@ for q in sys.argv[1:]:
             print("   LOGO:", chosen)
             if chosen[4]:
                 print("   site:", site_info(chosen[4]))
+                print("   ", s2(chosen[4]))
         else:
             site = business_site or FALLBACK.get(q)
             print("   no logo in Wikidata -> site:", site)
             if site:
                 print("   site:", site_info(site))
+                print("   ", s2(site))
     except Exception as e:
         print("   error:", e)

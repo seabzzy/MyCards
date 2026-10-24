@@ -31,6 +31,17 @@ class FinderException(message: String) : Exception(message)
  */
 object StoreFinder {
 
+    /** Сайты магазинов часто закрыты для «роботов» — к ним обращаемся как обычный браузер. */
+    private const val BROWSER_UA =
+        "Mozilla/5.0 (Linux; Android 16; vivo X200 Pro mini) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36"
+
+    /** Википедии/Wikidata — честный идентификатор приложения (так требуют их правила), остальным — браузерный. */
+    private fun userAgentFor(url: String): String {
+        val host = runCatching { URL(url).host.lowercase() }.getOrDefault("")
+        return if (host.endsWith("wikidata.org") || host.endsWith("wikipedia.org") || host.endsWith("wikimedia.org")) UA
+        else BROWSER_UA
+    }
+
     private const val UA = "MyCards/1.0 (Android; personal loyalty-card wallet)"
     private const val TIMEOUT = 10_000
 
@@ -82,6 +93,17 @@ object StoreFinder {
                 if (logo == null) {
                     logo = page.icons.firstNotNullOfOrNull { runCatching { downloadBitmap(it) }.getOrNull() }
                 }
+            }
+        }
+
+        // Сайт закрыт или отдал только крошечный значок — берём значок сайта через сервис значков Google.
+        if (website != null && (logo == null || logo!!.width < 96)) {
+            val host = runCatching { URL(website).host }.getOrNull()
+            if (host != null) {
+                val icon = runCatching {
+                    downloadBitmap("https://www.google.com/s2/favicons?domain=$host&sz=256")
+                }.getOrNull()
+                if (icon != null && icon.width >= 64 && icon.width > (logo?.width ?: 0)) logo = icon
             }
         }
 
@@ -257,7 +279,7 @@ object StoreFinder {
                 instanceFollowRedirects = false
                 connectTimeout = TIMEOUT
                 readTimeout = TIMEOUT
-                setRequestProperty("User-Agent", UA)
+                setRequestProperty("User-Agent", userAgentFor(current))
                 setRequestProperty("Accept", accept)
                 setRequestProperty("Accept-Language", "ru,en;q=0.8")
             }
