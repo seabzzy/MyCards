@@ -1,0 +1,25 @@
+== Порядок
+  [ddg] links=10 sites=['https://wordorder.ru', 'https://poryadok-online.ru', 'https://shops.moscow', 'https://shopogolik.club'] vk=[]
+      check https://wordorder.ru -> title:Интернет магазин "Порядок Слов"
+      CHOSEN: https://wordorder.ru
+  [ddg-lite] links=10 sites=['https://poryadok-online.ru', 'https://shops.moscow', 'https://poryadokshop.ru'] vk=[]
+  [bing] links=10 sites=['https://shops.moscow'] vk=[]
+== Европа
+  [ddg] links=10 sites=['https://europa-market.ru', 'https://europa-ts.ru', 'https://e-mf.spb.ru', 'https://eu-market.ru'] vk=[]
+      check https://europa-market.ru -> title:Европа маркет
+      CHOSEN: https://europa-market.ru
+  [ddg-lite] links=10 sites=['https://europa-market.ru', 'https://europa-ts.ru', 'https://e-mf.spb.ru', 'https://eu-market.ru'] vk=[]
+  [bing] links=10 sites=['https://europa-market.ru', 'https://europa-ts.ru', 'https://eu-market.ru', 'https://e-mf.spb.ru'] vk=[]
+== Пятёрочка
+  [ddg] links=10 sites=['https://5ka.ru', 'https://w-5ka.ru', 'https://x5.ru', 'https://w-pyaterochka.ru'] vk=[]
+      check https://5ka.ru -> False
+      check https://w-5ka.ru -> title:Каталоги 🛒 «Пятерочка»
+      CHOSEN: https://w-5ka.ru
+  [ddg-lite] links=10 sites=['https://5ka.ru', 'https://x5.ru', 'https://w-5ka.ru', 'https://w-pyaterochka.ru'] vk=[]
+  [bing] links=10 sites=['https://5ka.ru', 'https://w-5ka.ru', 'https://x5.ru', 'https://a-piter.ru'] vk=[]
+== Магнит
+  [ddg] links=10 sites=['https://magnit.com', 'https://magnit.ru', 'https://cosmetic.magnit.ru', 'https://magniit.ru'] vk=['https://vk.ru/magnitretail']
+      check https://magnit.com -> host
+      CHOSEN: https://magnit.com
+  [ddg-lite] links=10 sites=['https://magnit.com', 'https://magnit.ru', 'https://cosmetic.magnit.ru', 'https://magniit.ru'] vk=['https://vk.ru/magnitretail']
+  [bing] links=10 sites=['https://magnit.com', 'https://magnit.ru', 'https://cosmetic.magnit.ru', 'https://magniit.ru'] vk=['https://vk.ru/magnitretail']
