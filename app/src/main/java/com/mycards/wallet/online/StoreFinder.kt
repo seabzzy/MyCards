@@ -60,13 +60,19 @@ object StoreFinder {
      */
     fun buildDesign(candidate: StoreCandidate?, manualSite: String?): FoundDesign {
         var website = manualSite?.trim()?.takeIf { it.isNotEmpty() }?.let(::normalizeUrl)
-        var logo: Bitmap? = null
-
+        var logoName: String? = null
         if (candidate != null) {
             val entity = runCatching { loadEntity(candidate.id) }.getOrNull()
             if (website == null) website = entity?.first
-            entity?.second?.let { file -> logo = runCatching { downloadCommonsImage(file) }.getOrNull() }
+            logoName = entity?.second
         }
+        return assemble(website, logoName)
+    }
+
+    /** Собирает оформление: логотип из Wikimedia Commons (если есть), цвет и иконка — с сайта магазина. */
+    private fun assemble(site: String?, logoName: String?): FoundDesign {
+        val website = site?.let(::normalizeUrl)
+        var logo: Bitmap? = logoName?.let { runCatching { downloadCommonsImage(it) }.getOrNull() }
 
         var themeColor: Int? = null
         if (website != null) {
@@ -96,21 +102,22 @@ object StoreFinder {
     // ---------- Wikidata ----------
 
     /** @return (официальный сайт, имя файла логотипа на Wikimedia Commons) */
-    private fun loadEntity(id: String): Pair<String?, String?> {
-        // Берём только два нужных свойства — это несколько килобайт вместо всей карточки объекта.
-        fun claim(prop: String): String? {
-            val url = "https://www.wikidata.org/w/api.php?action=wbgetclaims&format=json&entity=$id&property=$prop"
-            val root = JSONObject(String(get(url, 256 * 1024).second, Charsets.UTF_8))
-            val arr = root.optJSONObject("claims")?.optJSONArray(prop) ?: return null
-            val items = (0 until arr.length()).map { arr.getJSONObject(it) }
-                .filter { it.optString("rank") != "deprecated" }
-                .sortedBy { if (it.optString("rank") == "preferred") 0 else 1 }
-            return items.firstNotNullOfOrNull {
-                it.optJSONObject("mainsnak")?.optJSONObject("datavalue")?.optString("value")?.takeIf { v -> v.isNotBlank() }
-            }
+    /** Одно свойство объекта Wikidata (несколько килобайт вместо всей карточки). */
+    private fun claimOf(id: String, prop: String): String? {
+        val url = "https://www.wikidata.org/w/api.php?action=wbgetclaims&format=json&entity=$id&property=$prop"
+        val root = JSONObject(String(get(url, 256 * 1024).second, Charsets.UTF_8))
+        val arr = root.optJSONObject("claims")?.optJSONArray(prop) ?: return null
+        val items = (0 until arr.length()).map { arr.getJSONObject(it) }
+            .filter { it.optString("rank") != "deprecated" }
+            .sortedBy { if (it.optString("rank") == "preferred") 0 else 1 }
+        return items.firstNotNullOfOrNull {
+            it.optJSONObject("mainsnak")?.optJSONObject("datavalue")?.optString("value")?.takeIf { v -> v.isNotBlank() }
         }
-        return runCatching { claim("P856") }.getOrNull() to runCatching { claim("P154") }.getOrNull()
     }
+
+    /** @return (официальный сайт, имя файла логотипа) */
+    private fun loadEntity(id: String): Pair<String?, String?> =
+        runCatching { claimOf(id, "P856") }.getOrNull() to runCatching { claimOf(id, "P154") }.getOrNull()
 
     // ---------- Автоматический подбор ----------
 
@@ -137,14 +144,22 @@ object StoreFinder {
             }.thenBy { it.index }
         ).map { it.value }
 
-        for (c in ranked.take(5)) {
-            if (!BUSINESS.containsMatchIn(c.description) && norm(c.label) != q) continue
-            val (_, logoName) = runCatching { loadEntity(c.id) }.getOrNull() ?: continue
-            if (logoName == null) continue
-            val design = runCatching { buildDesign(c, null) }.getOrNull()
-            if (design?.logo != null) return design
+        var businessSite: String? = null
+        for (c in ranked.take(4)) {
+            val isBusiness = BUSINESS.containsMatchIn(c.description)
+            if (!isBusiness && norm(c.label) != q) continue
+            val logoName = runCatching { claimOf(c.id, "P154") }.getOrNull()
+            if (logoName != null) {
+                val site = runCatching { claimOf(c.id, "P856") }.getOrNull()
+                val design = runCatching { assemble(site, logoName) }.getOrNull()
+                if (design?.logo != null) return design
+            } else if (isBusiness && businessSite == null) {
+                // Организация нашлась, но без логотипа в базе — возьмём логотип и цвет с её сайта.
+                businessSite = runCatching { claimOf(c.id, "P856") }.getOrNull()
+            }
         }
-        return fallbackSite?.let { site -> runCatching { buildDesign(null, site) }.getOrNull() }
+        val site = businessSite ?: fallbackSite ?: return null
+        return runCatching { assemble(site, null) }.getOrNull()
     }
 
     private fun downloadCommonsImage(fileName: String): Bitmap? {
