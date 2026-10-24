@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run diagnostics
-        run: python3 tools/check_search.py "Порядок сеть магазинов официальный сайт" "Европа сеть магазинов официальный сайт" "Пятёрочка сеть магазинов официальный сайт" > result.txt 2>&1 || true
+        run: python3 tools/check_search.py "Европа сеть магазинов" "Пятёрочка магазин" > result.txt 2>&1 || true
       - name: Publish
         run: |
           mkdir out && cp result.txt out/ && echo "${GITHUB_SHA}" > out/STATUS

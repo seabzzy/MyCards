@@ -29,19 +29,49 @@ def links_yandex(page):
     return [html.unescape(u) for u in re.findall(r'<a[^>]+class="[^"]*(?:OrganicTitle|Link_theme_outer|organic__url)[^"]*"[^>]+href="(https?://[^"]+)"', page)] or \
            [u for u in re.findall(r'href="(https?://[^"]+)"', page) if "yandex" not in u][:10]
 
+DESKTOP = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+
+def fetch_ua(url, ua, data=None):
+    req = urllib.request.Request(url, data=data, headers={"User-Agent": ua, "Accept": "text/html", "Accept-Language": "ru-RU,ru;q=0.9"})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        return r.geturl(), r.read(800 * 1024).decode("utf-8", "ignore")
+
+def links_lite(page):
+    out = []
+    for m in re.finditer(r'<a[^>]+rel="nofollow"[^>]+href="([^"]+)"[^>]*class=.result-link|<a[^>]+class=.result-link.[^>]+href="([^"]+)"', page):
+        h = html.unescape(m.group(1) or m.group(2))
+        q = urllib.parse.parse_qs(urllib.parse.urlparse(h).query).get("uddg")
+        out.append(q[0] if q else h)
+    if not out:
+        for h in re.findall(r'href="(//duckduckgo\.com/l/\?uddg=[^"]+)"', page):
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(html.unescape(h)).query).get("uddg")
+            if q: out.append(q[0])
+    return out
+
+def links_bing2(page):
+    out = re.findall(r'<li class="b_algo"[^>]*>.*?<a[^>]+href="(https?://[^"]+)"', page, re.S)
+    return [html.unescape(u) for u in out]
+
+def links_mail(page):
+    out = re.findall(r'"url"\s*:\s*"(https?:[^"]+)"', page)
+    out += re.findall(r'<a[^>]+class="[^"]*(?:result__title|light-link)[^"]*"[^>]+href="(https?://[^"]+)"', page)
+    out = [html.unescape(u).replace("\\/", "/") for u in out]
+    return [u for u in out if "mail.ru" not in u and "imgsmail" not in u]
+
 ENGINES = {
-    "duckduckgo": (lambda q: "https://html.duckduckgo.com/html/?" + urllib.parse.urlencode({"q": q, "kl": "ru-ru"}), links_ddg),
-    "google": (lambda q: "https://www.google.com/search?" + urllib.parse.urlencode({"q": q, "hl": "ru", "gl": "ru", "num": 10}), links_google),
-    "bing": (lambda q: "https://www.bing.com/search?" + urllib.parse.urlencode({"q": q, "setlang": "ru", "cc": "RU", "mkt": "ru-RU"}), links_bing),
-    "yandex": (lambda q: "https://yandex.ru/search/?" + urllib.parse.urlencode({"text": q, "lr": 225}), links_yandex),
+    "ddg-html-post": (lambda q: ("https://html.duckduckgo.com/html/", urllib.parse.urlencode({"q": q, "kl": "ru-ru"}).encode(), UA), links_ddg),
+    "ddg-lite": (lambda q: ("https://lite.duckduckgo.com/lite/?" + urllib.parse.urlencode({"q": q, "kl": "ru-ru"}), None, UA), links_lite),
+    "bing-desktop": (lambda q: ("https://www.bing.com/search?" + urllib.parse.urlencode({"q": q, "setlang": "ru", "cc": "RU"}), None, DESKTOP), links_bing2),
+    "mail.ru": (lambda q: ("https://go.mail.ru/search?" + urllib.parse.urlencode({"q": q}), None, DESKTOP), links_mail),
 }
 
 for q in sys.argv[1:]:
     print("=====", q)
     for name, (mk, parse) in ENGINES.items():
-        time.sleep(1.5)
+        time.sleep(4)
         try:
-            final, page = fetch(mk(q))
+            url, data, ua = mk(q)
+            final, page = fetch_ua(url, ua, data)
             links = parse(page)
             flag = ""
             if "captcha" in final.lower() or "showcaptcha" in page.lower(): flag += " CAPTCHA"
