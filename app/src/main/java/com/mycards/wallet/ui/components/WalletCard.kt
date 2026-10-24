@@ -52,6 +52,7 @@ fun WalletCard(
     modifier: Modifier = Modifier,
     showFullNumber: Boolean = false,
     logoFile: String? = null,
+    pinned: Boolean = false,
 ) {
     val shape = RoundedCornerShape(24.dp)
     val logo = remember(logoFile) { Logos.image(logoFile) }
@@ -78,6 +79,10 @@ fun WalletCard(
                 .padding(horizontal = 20.dp, vertical = 16.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                if (pinned) {
+                    GlyphIcon(Glyph.Pin, onCard, size = 16.dp)
+                    Spacer(Modifier.width(6.dp))
+                }
                 Text(
                     name.ifBlank { "Новая карта" },
                     color = onCard,
@@ -120,7 +125,7 @@ fun WalletCard(
 
 @Composable
 fun WalletCard(card: LoyaltyCard, modifier: Modifier = Modifier, showFullNumber: Boolean = false) =
-    WalletCard(card.name, card.number, card.format, Color(card.colorStart), Color(card.colorEnd), modifier, showFullNumber, card.logoFile)
+    WalletCard(card.name, card.number, card.format, Color(card.colorStart), Color(card.colorEnd), modifier, showFullNumber, card.logoFile, card.pinned)
 
 /** Логотип магазина на белой «плашке» — так любой логотип хорошо читается на цветной карте. */
 @Composable
@@ -161,13 +166,14 @@ fun CardStack(
     cards: List<LoyaltyCard>,
     onClick: (LoyaltyCard) -> Unit,
     modifier: Modifier = Modifier,
+    onLongClick: (LoyaltyCard) -> Unit = {},
 ) {
     Layout(
         modifier = modifier,
         content = {
             cards.forEach { card ->
                 androidx.compose.runtime.key(card.id) {
-                    WalletCard(card, Modifier.bounceClick { onClick(card) })
+                    WalletCard(card, Modifier.bounceClick(onLongClick = { onLongClick(card) }) { onClick(card) })
                 }
             }
         },

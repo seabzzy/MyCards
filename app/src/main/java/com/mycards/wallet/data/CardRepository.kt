@@ -52,6 +52,21 @@ class CardRepository(context: Context) {
         if (it.id == id) it.copy(lastUsedAt = System.currentTimeMillis(), useCount = it.useCount + 1) else it
     })
 
+    fun setPinned(id: String, pinned: Boolean) {
+        val next = (_cards.value.filter { it.pinned }.maxOfOrNull { it.pinOrder } ?: 0L) + 1
+        persist(_cards.value.map {
+            if (it.id == id) it.copy(pinned = pinned, pinOrder = if (pinned) next else 0L) else it
+        })
+    }
+
+    fun reorderPinned(ids: List<String>) = persist(_cards.value.map { c ->
+        val i = ids.indexOf(c.id)
+        if (i >= 0) c.copy(pinOrder = i.toLong()) else c
+    })
+
+    fun rename(id: String, name: String) =
+        persist(_cards.value.map { if (it.id == id) it.copy(name = name) else it })
+
     fun exportJson(): String = CardJson.encode(_cards.value)
 
     /** Импорт с объединением: дубликаты (тот же id или номер+формат) пропускаются. */
@@ -87,6 +102,8 @@ object CardJson {
                 put("lastUsedAt", c.lastUsedAt)
                 put("useCount", c.useCount)
                 put("logoFile", c.logoFile ?: JSONObject.NULL)
+                put("pinned", c.pinned)
+                put("pinOrder", c.pinOrder)
             })
         }
         return JSONObject().put("version", 1).put("cards", arr).toString(2)
@@ -111,6 +128,8 @@ object CardJson {
                 lastUsedAt = o.optLong("lastUsedAt", System.currentTimeMillis()),
                 useCount = o.optInt("useCount", 0),
                 logoFile = if (o.isNull("logoFile")) null else o.optString("logoFile").ifEmpty { null },
+                pinned = o.optBoolean("pinned", false),
+                pinOrder = o.optLong("pinOrder", 0L),
             )
         }
     }

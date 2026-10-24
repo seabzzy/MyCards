@@ -23,6 +23,15 @@ data class PdfDocument(
     val pageCount: Int,
     val sizeBytes: Long,
     val addedAt: Long,
+    val pinned: Boolean = false,
+    val pinOrder: Long = 0L,
+)
+
+/** Закреплённые сверху в заданном порядке, остальные — новые выше. */
+fun List<PdfDocument>.inListOrder(): List<PdfDocument> = sortedWith(
+    compareByDescending<PdfDocument> { it.pinned }
+        .thenBy { if (it.pinned) it.pinOrder else 0L }
+        .thenByDescending { it.addedAt }
 )
 
 /**
@@ -75,6 +84,20 @@ class DocumentRepository(context: Context) {
 
     /** Переименование: меняется только отображаемое название, файл остаётся. */
     @Synchronized
+    fun setPinned(id: String, pinned: Boolean) {
+        val next = (_documents.value.filter { it.pinned }.maxOfOrNull { it.pinOrder } ?: 0L) + 1
+        persist(_documents.value.map {
+            if (it.id == id) it.copy(pinned = pinned, pinOrder = if (pinned) next else 0L) else it
+        })
+    }
+
+    @Synchronized
+    fun reorderPinned(ids: List<String>) = persist(_documents.value.map { d ->
+        val i = ids.indexOf(d.id)
+        if (i >= 0) d.copy(pinOrder = i.toLong()) else d
+    })
+
+    @Synchronized
     fun rename(id: String, title: String) {
         persist(_documents.value.map { if (it.id == id) it.copy(title = title) else it })
     }
@@ -100,6 +123,8 @@ class DocumentRepository(context: Context) {
                     pageCount = o.optInt("pageCount"),
                     sizeBytes = o.optLong("sizeBytes"),
                     addedAt = o.optLong("addedAt"),
+                    pinned = o.optBoolean("pinned", false),
+                    pinOrder = o.optLong("pinOrder", 0L),
                 )
             }
         } catch (e: Exception) {
@@ -123,6 +148,8 @@ class DocumentRepository(context: Context) {
                 put("pageCount", d.pageCount)
                 put("sizeBytes", d.sizeBytes)
                 put("addedAt", d.addedAt)
+                put("pinned", d.pinned)
+                put("pinOrder", d.pinOrder)
             })
         }
         var out: FileOutputStream? = null

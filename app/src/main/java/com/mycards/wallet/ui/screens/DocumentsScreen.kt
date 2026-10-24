@@ -38,6 +38,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mycards.wallet.data.PdfDocument
+import com.mycards.wallet.data.inListOrder
+import com.mycards.wallet.ui.components.ActionSheet
+import com.mycards.wallet.ui.components.ConfirmDeleteDialog
+import com.mycards.wallet.ui.components.RenameDialog
+import com.mycards.wallet.ui.components.ReorderDialog
+import com.mycards.wallet.ui.components.ReorderItem
+import com.mycards.wallet.ui.components.SheetAction
 import com.mycards.wallet.ui.AppViewModel
 import com.mycards.wallet.ui.components.Glyph
 import com.mycards.wallet.ui.components.GlyphIcon
@@ -56,6 +63,10 @@ fun DocumentsScreen(vm: AppViewModel, onBack: () -> Unit, onOpen: (PdfDocument) 
     val docs by vm.documents.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var adding by remember { mutableStateOf(false) }
+    var actionDoc by remember { mutableStateOf<PdfDocument?>(null) }
+    var renameTarget by remember { mutableStateOf<PdfDocument?>(null) }
+    var deleteTarget by remember { mutableStateOf<PdfDocument?>(null) }
+    var reorder by remember { mutableStateOf(false) }
 
     val picker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -112,9 +123,9 @@ fun DocumentsScreen(vm: AppViewModel, onBack: () -> Unit, onOpen: (PdfDocument) 
                             .clip(RoundedCornerShape(24.dp))
                             .background(p.surface),
                     ) {
-                        docs.forEachIndexed { i, doc ->
+                        docs.inListOrder().forEachIndexed { i, doc ->
                             if (i > 0) HorizontalDivider(Modifier.padding(start = 76.dp), color = p.divider)
-                            DocumentRow(doc) { onOpen(doc) }
+                            DocumentRow(doc, onLongClick = { actionDoc = doc }) { onOpen(doc) }
                         }
                     }
                     Spacer(Modifier.height(96.dp))
@@ -135,16 +146,57 @@ fun DocumentsScreen(vm: AppViewModel, onBack: () -> Unit, onOpen: (PdfDocument) 
             )
         }
     }
+
+    actionDoc?.let { doc ->
+        val pinnedCount = docs.count { it.pinned }
+        ActionSheet(
+            title = doc.title,
+            actions = buildList {
+                add(SheetAction(if (doc.pinned) "Открепить" else "Закрепить", Glyph.Pin) {
+                    vm.setDocumentPinned(doc.id, !doc.pinned)
+                })
+                if (doc.pinned && pinnedCount >= 2) {
+                    add(SheetAction("Изменить порядок закреплённых", Glyph.Drag) { reorder = true })
+                }
+                add(SheetAction("Переименовать", Glyph.Edit) { renameTarget = doc })
+                add(SheetAction("Удалить", Glyph.Trash, danger = true) { deleteTarget = doc })
+            },
+            onDismiss = { actionDoc = null },
+        )
+    }
+    renameTarget?.let { doc ->
+        RenameDialog(
+            current = doc.title,
+            onDismiss = { renameTarget = null },
+            onSave = { vm.renameDocument(doc.id, it); renameTarget = null },
+        )
+    }
+    deleteTarget?.let { doc ->
+        ConfirmDeleteDialog(
+            title = "Удалить документ?",
+            text = "«${doc.title}» будет удалён с телефона. Восстановить его будет нельзя.",
+            onConfirm = { vm.deleteDocument(doc.id); deleteTarget = null },
+            onDismiss = { deleteTarget = null },
+        )
+    }
+    if (reorder) {
+        ReorderDialog(
+            title = "Порядок закреплённых",
+            items = docs.filter { it.pinned }.sortedBy { it.pinOrder }.map { ReorderItem(it.id, it.title) },
+            onDismiss = { reorder = false },
+            onSave = { vm.reorderPinnedDocuments(it); reorder = false },
+        )
+    }
 }
 
 @Composable
-private fun DocumentRow(doc: PdfDocument, onClick: () -> Unit) {
+private fun DocumentRow(doc: PdfDocument, onLongClick: () -> Unit, onClick: () -> Unit) {
     val p = LocalOrigin.current
     val date = remember(doc.addedAt) { SimpleDateFormat("d MMM yyyy", Locale("ru")).format(doc.addedAt) }
     Row(
         Modifier
             .fillMaxWidth()
-            .bounceClick(onClick = onClick)
+            .bounceClick(onLongClick = onLongClick, onClick = onClick)
             .padding(horizontal = 18.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -154,10 +206,17 @@ private fun DocumentRow(doc: PdfDocument, onClick: () -> Unit) {
         ) { Text("PDF", color = p.accent, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
-            Text(
-                doc.title, color = p.text, fontSize = 16.sp, fontWeight = FontWeight.Medium,
-                maxLines = 1, overflow = TextOverflow.Ellipsis,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (doc.pinned) {
+                    GlyphIcon(Glyph.Pin, p.accent, size = 16.dp)
+                    Spacer(Modifier.width(6.dp))
+                }
+                Text(
+                    doc.title, color = p.text, fontSize = 16.sp, fontWeight = FontWeight.Medium,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+            }
             Spacer(Modifier.height(2.dp))
             Text(
                 "${doc.pageCount} стр. · ${sizeText(doc.sizeBytes)} · $date",

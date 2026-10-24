@@ -38,6 +38,20 @@ data class LoyaltyCard(
     val useCount: Int = 0,
     /** Логотип магазина — имя файла в папке logos (оформление хранится локально). */
     val logoFile: String? = null,
+    /** Закреплена ли карта (закреплённые всегда наверху). */
+    val pinned: Boolean = false,
+    /** Порядок среди закреплённых: меньше — выше. */
+    val pinOrder: Long = 0L,
+)
+
+/**
+ * Постоянный порядок карт: закреплённые сверху в заданном порядке,
+ * остальные — по дате добавления (новые выше). От открытия карты порядок не меняется.
+ */
+fun List<LoyaltyCard>.inWalletOrder(): List<LoyaltyCard> = sortedWith(
+    compareByDescending<LoyaltyCard> { it.pinned }
+        .thenBy { if (it.pinned) it.pinOrder else 0L }
+        .thenByDescending { it.createdAt }
 )
 
 /** Магазин из встроенного офлайн-каталога. */

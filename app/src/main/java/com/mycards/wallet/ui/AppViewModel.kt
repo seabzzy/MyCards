@@ -63,6 +63,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun deleteDocument(id: String) = documentRepo.delete(id)
 
+    fun setDocumentPinned(id: String, pinned: Boolean) = documentRepo.setPinned(id, pinned)
+
+    fun reorderPinnedDocuments(ids: List<String>) = documentRepo.reorderPinned(ids)
+
+    fun setCardPinned(id: String, pinned: Boolean) = repo.setPinned(id, pinned)
+
+    fun reorderPinnedCards(ids: List<String>) = repo.reorderPinned(ids)
+
+    fun renameCard(id: String, name: String) {
+        if (name.isNotBlank()) repo.rename(id, name.trim())
+    }
+
     /** Добавляет PDF в приложение. Возвращает false, если файл не удалось открыть. */
     suspend fun addDocument(uri: Uri): Boolean = withContext(Dispatchers.IO) {
         try {
@@ -241,6 +253,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             lastUsedAt = System.currentTimeMillis(),
             useCount = existing?.useCount ?: 0,
             logoFile = d.logoFile,
+            pinned = existing?.pinned ?: false,
+            pinOrder = existing?.pinOrder ?: 0L,
         )
         repo.upsert(card)
         // Запоминаем оформление под названием карты — для следующих карт этого магазина.
