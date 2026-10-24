@@ -168,7 +168,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     suspend fun searchStores(query: String): List<StoreCandidate> = withContext(Dispatchers.IO) {
         try {
-            StoreFinder.search(query)
+            StoreFinder.searchAll(query)
         } catch (e: IOException) {
             _messages.tryEmit("Нет подключения к интернету"); emptyList()
         } catch (e: Exception) {
