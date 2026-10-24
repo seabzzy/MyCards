@@ -49,6 +49,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalContext
+import android.app.ActivityManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -200,13 +202,20 @@ private fun PdfPages(session: PdfSession) {
     val p = LocalOrigin.current
     var zoom by remember { mutableFloatStateOf(1f) }
     val listState = rememberLazyListState()
+    // На телефонах с небольшим запасом памяти (например, Galaxy A53 на 4 ГБ) рисуем страницы
+    // чуть меньшего разрешения, чтобы при увеличении не упираться в память.
+    val context = LocalContext.current
+    val maxRender = remember {
+        val am = context.getSystemService(ActivityManager::class.java)
+        if (am != null && (am.isLowRamDevice || am.memoryClass < 256)) 1200 else MAX_RENDER_WIDTH_PX
+    }
     // Масштаб округляем до шагов 0.25, чтобы не перерисовывать страницы на каждом движении пальцев.
     val scale = (zoom * 4).roundToInt() / 4f
 
     Box(Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val screenPx = with(LocalDensity.current) { maxWidth.roundToPx() }
-            val widthPx = min((screenPx * scale).roundToInt(), MAX_RENDER_WIDTH_PX)
+            val widthPx = min((screenPx * scale).roundToInt(), maxRender)
             LazyColumn(
                 state = listState,
                 modifier = Modifier

@@ -358,7 +358,8 @@ fun CardGrid(
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val gap = with(density) { 12.dp.toPx() }
         val cellW = (with(density) { maxWidth.toPx() } - gap) / 2f
-        val cellH = cellW * 0.62f
+        // С увеличенным шрифтом (часто на Samsung) плитка становится выше, чтобы название не обрезалось.
+        val cellH = cellW * 0.62f * density.fontScale.coerceIn(1f, 1.4f)
         fun cellPos(i: Int) = Offset((i % 2) * (cellW + gap), (i / 2) * (cellH + gap))
 
         Layout(
