@@ -137,6 +137,31 @@ fun ReviewScreen(
         if (logoFile == null) vm.savedDesign(name)?.let { applyDesign(it) }
     }
 
+    // Автоподбор: для новой карты сами ищем магазин в интернете, логотип и фирменные цвета.
+    var autoStatus by remember { mutableStateOf<String?>(null) }
+    var autoDisabled by remember { mutableStateOf(false) }
+    var colorsTouched by remember { mutableStateOf(false) }
+    LaunchedEffect(name) {
+        if (!isNew || autoDisabled || logoFile != null || !vm.settings.onlineEnabled) return@LaunchedEffect
+        val query = name.trim()
+        if (query.length < 2) { autoStatus = null; return@LaunchedEffect }
+        delay(900) // ждём, пока пользователь допишет название
+        if (logoFile != null) return@LaunchedEffect
+        vm.savedDesign(query)?.let { applyDesign(it); autoStatus = null; return@LaunchedEffect }
+        autoStatus = "Ищу логотип и цвета «$query»…"
+        val found = vm.autoDesign(query, vm.brand(brandId))
+        if (found != null && logoFile == null && !autoDisabled) {
+            val keepStart = colorStart
+            val keepEnd = colorEnd
+            applyDesign(found)
+            // цвет, выбранный вручную, не перебиваем
+            if (colorsTouched) { colorStart = keepStart; colorEnd = keepEnd }
+            autoStatus = null
+        } else if (logoFile == null) {
+            autoStatus = "Автоматически не нашёл — нажмите, чтобы выбрать магазин"
+        }
+    }
+
     // Онлайн-уточнение: если пользователь ещё ничего не менял — подставляем найденный магазин.
     val lookup by vm.online.collectAsStateWithLifecycle()
     val online = lookup?.takeIf { initial.lookupId != null && it.id == initial.lookupId }?.status
@@ -246,7 +271,8 @@ fun ReviewScreen(
                 website = designSite,
                 online = vm.settings.onlineEnabled,
                 onSearch = { showSearch = true },
-                onRemoveLogo = { logoFile = null; designSite = null },
+                onRemoveLogo = { logoFile = null; designSite = null; autoDisabled = true },
+                status = autoStatus,
             )
 
             SectionLabel("Данные карты")
@@ -291,7 +317,7 @@ fun ReviewScreen(
                             .padding(5.dp)
                             .clip(CircleShape)
                             .background(Brush.linearGradient(listOf(Color(s), Color(e))))
-                            .bounceClick { colorStart = s; colorEnd = e },
+                            .bounceClick { colorStart = s; colorEnd = e; colorsTouched = true },
                     )
                 }
             }
@@ -395,6 +421,7 @@ private fun DesignBlock(
     online: Boolean,
     onSearch: () -> Unit,
     onRemoveLogo: () -> Unit,
+    status: String? = null,
 ) {
     val p = LocalOrigin.current
     val logo = remember(logoFile) { Logos.image(logoFile) }
@@ -424,6 +451,7 @@ private fun DesignBlock(
                     when {
                         logo != null && website != null -> website.removePrefix("https://").removePrefix("http://").trimEnd('/')
                         logo != null -> "Сохранено на телефоне"
+                        status != null -> status
                         !online -> "Интернет выключен в настройках"
                         else -> "Напишите название — загрузим логотип и цвета"
                     },

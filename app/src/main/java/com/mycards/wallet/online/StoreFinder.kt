@@ -97,12 +97,11 @@ object StoreFinder {
 
     /** @return (официальный сайт, имя файла логотипа на Wikimedia Commons) */
     private fun loadEntity(id: String): Pair<String?, String?> {
-        val url = "https://www.wikidata.org/wiki/Special:EntityData/$id.json"
-        val root = JSONObject(String(get(url, 4 * 1024 * 1024).second, Charsets.UTF_8))
-        val claims = root.getJSONObject("entities").getJSONObject(id).optJSONObject("claims")
-            ?: return null to null
-        fun firstString(prop: String): String? {
-            val arr = claims.optJSONArray(prop) ?: return null
+        // Берём только два нужных свойства — это несколько килобайт вместо всей карточки объекта.
+        fun claim(prop: String): String? {
+            val url = "https://www.wikidata.org/w/api.php?action=wbgetclaims&format=json&entity=$id&property=$prop"
+            val root = JSONObject(String(get(url, 256 * 1024).second, Charsets.UTF_8))
+            val arr = root.optJSONObject("claims")?.optJSONArray(prop) ?: return null
             val items = (0 until arr.length()).map { arr.getJSONObject(it) }
                 .filter { it.optString("rank") != "deprecated" }
                 .sortedBy { if (it.optString("rank") == "preferred") 0 else 1 }
@@ -110,7 +109,42 @@ object StoreFinder {
                 it.optJSONObject("mainsnak")?.optJSONObject("datavalue")?.optString("value")?.takeIf { v -> v.isNotBlank() }
             }
         }
-        return firstString("P856") to firstString("P154") // P856 — сайт, P154 — логотип
+        return runCatching { claim("P856") }.getOrNull() to runCatching { claim("P154") }.getOrNull()
+    }
+
+    // ---------- Автоматический подбор ----------
+
+    private val BUSINESS = Regex(
+        "сет[ьи]|магазин|ритейл|розничн|супермаркет|гипермаркет|дискаунтер|аптек|ресторан|кафе|кофейн|" +
+            "заправ|азс|бренд|компани|торгов|банк|retail|chain|store|supermarket|pharmacy|restaurant|company|brand|shop",
+        RegexOption.IGNORE_CASE,
+    )
+
+    private fun norm(s: String) = s.lowercase().replace('ё', 'е').filter { it.isLetterOrDigit() }
+
+    /**
+     * Сам находит магазин по названию и собирает оформление.
+     * Берутся только организации, у которых в Wikidata есть логотип, — так «Магнит»
+     * не превратится в физический магнит. Если не нашлось — пробуем сайт из каталога.
+     */
+    fun autoFind(query: String, fallbackSite: String?): FoundDesign? {
+        val q = norm(query)
+        val candidates = runCatching { search(query) }.getOrDefault(emptyList())
+            .filterNot { it.description.contains("значени", true) || it.description.contains("disambiguation", true) }
+        val ranked = candidates.withIndex().sortedWith(
+            compareByDescending<IndexedValue<StoreCandidate>> { (_, c) ->
+                (if (BUSINESS.containsMatchIn(c.description)) 2 else 0) + (if (norm(c.label) == q) 1 else 0)
+            }.thenBy { it.index }
+        ).map { it.value }
+
+        for (c in ranked.take(5)) {
+            if (!BUSINESS.containsMatchIn(c.description) && norm(c.label) != q) continue
+            val (_, logoName) = runCatching { loadEntity(c.id) }.getOrNull() ?: continue
+            if (logoName == null) continue
+            val design = runCatching { buildDesign(c, null) }.getOrNull()
+            if (design?.logo != null) return design
+        }
+        return fallbackSite?.let { site -> runCatching { buildDesign(null, site) }.getOrNull() }
     }
 
     private fun downloadCommonsImage(fileName: String): Bitmap? {

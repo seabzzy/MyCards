@@ -123,6 +123,29 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
      * Находит в интернете логотип и цвета магазина, сохраняет их на телефоне
      * и запоминает под названием карты — следующие карты этого магазина оформятся без сети.
      */
+    /**
+     * Автоматический подбор оформления по названию карты. Ошибки не показываются —
+     * если не нашлось, пользователь может выбрать магазин вручную.
+     */
+    suspend fun autoDesign(cardName: String, brand: Brand?): StoreDesign? = withContext(Dispatchers.IO) {
+        runCatching {
+            val name = cardName.trim()
+            val site = brand?.domains?.firstOrNull { it.contains('.') }
+            val found = StoreFinder.autoFind(brand?.name ?: name, site) ?: return@runCatching null
+            val logoFile = found.logo?.let { Logos.save(it) }
+            val design = StoreDesign(
+                key = DesignStore.key(name),
+                name = name,
+                colorStart = found.colorStart,
+                colorEnd = found.colorEnd,
+                logoFile = logoFile,
+                website = found.website,
+            )
+            designs.save(design, *listOfNotNull(brand?.name).toTypedArray())
+            design
+        }.getOrNull()
+    }
+
     suspend fun fetchDesign(cardName: String, candidate: StoreCandidate?, manualSite: String?): StoreDesign? =
         withContext(Dispatchers.IO) {
             try {

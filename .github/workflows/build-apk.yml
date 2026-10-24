@@ -48,12 +48,17 @@ jobs:
             ./gradlew assembleRelease --no-daemon --stacktrace
           } 2>&1 | tee build.log
 
+      - name: Diagnose store lookup
+        continue-on-error: true
+        run: python3 tools/check_stores.py "Магнит" "Пятёрочка" "Порядок" "Европа" "Лента" "Перекрёсток" "Спортмастер" > stores.txt 2>&1 || true
+
       # Результат (APK или лог ошибки) кладётся в ветку «builds» —
       # оттуда его забирает Claude и присылает в чат.
       - name: Publish result to 'builds' branch
         if: always()
         run: |
           mkdir out
+          cp stores.txt out/ 2>/dev/null || true
           grep -E "^e: |error:|FAILURE|What went wrong" -A 3 build.log | head -300 > out/errors.txt || true
           tail -n 200 build.log > out/build-tail.log || true
           cp app/build/outputs/apk/release/*.apk out/MyCards.apk 2>/dev/null || true

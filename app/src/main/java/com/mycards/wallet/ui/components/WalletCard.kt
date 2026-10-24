@@ -145,9 +145,9 @@ fun LogoBadge(logo: ImageBitmap, size: Dp = 44.dp) {
     Box(
         Modifier
             .size(size)
-            .clip(RoundedCornerShape(size * 0.3f))
+            .clip(CircleShape)
             .background(Color.White)
-            .padding(size * 0.12f),
+            .padding(size * 0.16f),
         contentAlignment = Alignment.Center,
     ) {
         Image(logo, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
