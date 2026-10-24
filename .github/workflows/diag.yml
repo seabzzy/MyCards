@@ -1,0 +1,18 @@
+name: Diagnostics
+on:
+  push:
+    branches: [diag]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run diagnostics
+        run: python3 tools/check_search.py "Порядок сеть магазинов официальный сайт" "Европа сеть магазинов официальный сайт" "Пятёрочка сеть магазинов официальный сайт" > result.txt 2>&1 || true
+      - name: Publish
+        run: |
+          mkdir out && cp result.txt out/ && echo "${GITHUB_SHA}" > out/STATUS
+          cd out && git init -q -b diag-results && git config user.name bot && git config user.email bot@users.noreply.github.com
+          git add -A && git commit -qm diag && git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" diag-results
