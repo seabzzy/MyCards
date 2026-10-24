@@ -75,6 +75,32 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (name.isNotBlank()) repo.rename(id, name.trim())
     }
 
+    /** Заново ищет логотип и фирменные цвета для уже сохранённой карты. */
+    fun refreshCardDesign(card: LoyaltyCard) {
+        if (!settings.onlineEnabled) {
+            _messages.tryEmit("Интернет выключен в настройках")
+            return
+        }
+        viewModelScope.launch {
+            busy = true
+            val design = autoDesign(card.name, brand(card.brandId))
+            busy = false
+            if (design == null) {
+                _messages.tryEmit("Не нашёл оформление «${card.name}». Можно выбрать магазин вручную: откройте карту → ⋯ → Изменить")
+                return@launch
+            }
+            val current = cards.value.firstOrNull { it.id == card.id } ?: return@launch
+            repo.upsert(
+                current.copy(
+                    colorStart = design.colorStart,
+                    colorEnd = design.colorEnd,
+                    logoFile = design.logoFile ?: current.logoFile,
+                )
+            )
+            _messages.tryEmit("Оформление «${card.name}» обновлено")
+        }
+    }
+
     /** Добавляет PDF в приложение. Возвращает false, если файл не удалось открыть. */
     suspend fun addDocument(uri: Uri): Boolean = withContext(Dispatchers.IO) {
         try {

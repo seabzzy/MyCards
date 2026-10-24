@@ -139,6 +139,7 @@ fun HomeScreen(
                                 vm.setCardPinned(card.id, !card.pinned)
                             },
                             SheetAction("Переименовать", Glyph.Edit) { renameTarget = card },
+                            SheetAction("Обновить оформление", Glyph.Refresh) { vm.refreshCardDesign(card) },
                             SheetAction("Удалить", Glyph.Trash, danger = true) { deleteTarget = card },
                         )
                     },

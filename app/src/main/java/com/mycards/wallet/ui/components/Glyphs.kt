@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /** Тонкие линейные иконки в стиле OriginOS (рисуются кодом, без внешних ресурсов). */
-enum class Glyph { Camera, Image, Keyboard, Flash, Scan, Copy, Back, Plus, More, Search, Check, Close, Trash, Edit, Sun, Card, Document, Pin, Drag }
+enum class Glyph { Camera, Image, Keyboard, Flash, Scan, Copy, Back, Plus, More, Search, Check, Close, Trash, Edit, Sun, Card, Document, Pin, Drag, Refresh }
 
 @Composable
 fun GlyphIcon(glyph: Glyph, tint: Color, modifier: Modifier = Modifier, size: Dp = 24.dp) {
@@ -96,6 +96,13 @@ fun GlyphIcon(glyph: Glyph, tint: Color, modifier: Modifier = Modifier, size: Dp
                 line(5f, 8f, 19f, 8f)
                 line(5f, 12f, 19f, 12f)
                 line(5f, 16f, 19f, 16f)
+            }
+            Glyph.Refresh -> {
+                drawArc(
+                    tint, startAngle = -60f, sweepAngle = 290f, useCenter = false,
+                    topLeft = o(5f, 5f), size = sz(14f, 14f), style = st,
+                )
+                poly(13.2f, 3.2f, 15.6f, 6f, 12.6f, 7.8f)
             }
             Glyph.Sun -> {
                 drawCircle(tint, 4f * k, o(12f, 12f), style = st)
