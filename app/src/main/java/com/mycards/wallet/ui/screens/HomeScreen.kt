@@ -81,6 +81,8 @@ fun HomeScreen(
     var menu by remember { mutableStateOf(false) }
     var renameTarget by remember { mutableStateOf<LoyaltyCard?>(null) }
     var deleteTarget by remember { mutableStateOf<LoyaltyCard?>(null) }
+    var refreshSearchFor by remember { mutableStateOf<LoyaltyCard?>(null) }
+    val pendingRefresh by vm.pendingRefresh.collectAsStateWithLifecycle()
 
     val shown = remember(cards, query) {
         cards.inWalletOrder()
@@ -186,6 +188,41 @@ fun HomeScreen(
             current = card.name,
             onDismiss = { renameTarget = null },
             onSave = { vm.renameCard(card.id, it); renameTarget = null },
+        )
+    }
+    pendingRefresh?.let { (cardId, design) ->
+        val card = cards.firstOrNull { it.id == cardId }
+        if (card != null) {
+            ConfirmDesignDialog(
+                design = design,
+                cardName = card.name,
+                number = card.number,
+                format = card.format,
+                onConfirm = {
+                    vm.applyDesignToCard(card.id, design)
+                    vm.clearPendingRefresh()
+                },
+                onOther = {
+                    vm.discardDesign(design)
+                    vm.clearPendingRefresh()
+                    refreshSearchFor = card
+                },
+                onReject = {
+                    vm.discardDesign(design)
+                    vm.clearPendingRefresh()
+                },
+            )
+        }
+    }
+    refreshSearchFor?.let { card ->
+        StoreSearchSheet(
+            vm = vm,
+            initialQuery = card.name,
+            onDismiss = { refreshSearchFor = null },
+            onDesign = { design ->
+                refreshSearchFor = null
+                vm.offerDesign(card.id, design)
+            },
         )
     }
     deleteTarget?.let { card ->

@@ -89,16 +89,47 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 _messages.tryEmit("Не нашёл оформление «${card.name}». Можно выбрать магазин вручную: откройте карту → ⋯ → Изменить")
                 return@launch
             }
-            val current = cards.value.firstOrNull { it.id == card.id } ?: return@launch
-            repo.upsert(
-                current.copy(
-                    colorStart = design.colorStart,
-                    colorEnd = design.colorEnd,
-                    logoFile = design.logoFile ?: current.logoFile,
-                )
-            )
-            _messages.tryEmit("Оформление «${card.name}» обновлено")
+            // Не применяем сразу — сначала пользователь подтверждает.
+            _pendingRefresh.value = card.id to design
         }
+    }
+
+    private val _pendingRefresh = MutableStateFlow<Pair<String, StoreDesign>?>(null)
+    /** Найденное оформление для сохранённой карты, ждущее подтверждения. */
+    val pendingRefresh: StateFlow<Pair<String, StoreDesign>?> = _pendingRefresh
+
+    fun offerDesign(cardId: String, design: StoreDesign) {
+        _pendingRefresh.value = cardId to design
+    }
+
+    fun clearPendingRefresh() {
+        _pendingRefresh.value = null
+    }
+
+    /** Подтверждено: применяем к карте и запоминаем для следующих карт этого магазина. */
+    fun applyDesignToCard(cardId: String, design: StoreDesign) {
+        val current = cards.value.firstOrNull { it.id == cardId } ?: return
+        repo.upsert(
+            current.copy(
+                colorStart = design.colorStart,
+                colorEnd = design.colorEnd,
+                logoFile = design.logoFile ?: current.logoFile,
+            )
+        )
+        confirmDesign(design.copy(key = DesignStore.key(current.name), name = current.name), current.name)
+        _messages.tryEmit("Оформление «${current.name}» обновлено")
+    }
+
+    /** Запомнить подтверждённое оформление под названием(ями) магазина. */
+    fun confirmDesign(design: StoreDesign, vararg names: String) {
+        val extra = names.filter { it.isNotBlank() }.toMutableList()
+        designs.save(design, *extra.toTypedArray())
+    }
+
+    /** Отклонено: удаляем скачанный логотип, чтобы не занимал место. */
+    fun discardDesign(design: StoreDesign) {
+        val file = design.logoFile ?: return
+        if (cards.value.none { it.logoFile == file }) Logos.file(file)?.delete()
     }
 
     /** Добавляет PDF в приложение. Возвращает false, если файл не удалось открыть. */
@@ -167,7 +198,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 logoFile = logoFile,
                 website = found.website,
             )
-            designs.save(design, *listOfNotNull(brand?.name).toTypedArray())
             design
         }.getOrNull()
     }
@@ -186,7 +216,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     logoFile = logoFile,
                     website = found.website,
                 )
-                designs.save(design, *listOfNotNull(candidate?.label).toTypedArray())
                 design
             } catch (e: FinderException) {
                 _messages.tryEmit(e.message ?: "Не удалось загрузить оформление"); null

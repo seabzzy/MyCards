@@ -139,6 +139,7 @@ fun ReviewScreen(
 
     // Автоподбор: для новой карты сами ищем магазин в интернете, логотип и фирменные цвета.
     var autoStatus by remember { mutableStateOf<String?>(null) }
+    var pendingDesign by remember { mutableStateOf<StoreDesign?>(null) }
     var autoDisabled by remember { mutableStateOf(false) }
     var colorsTouched by remember { mutableStateOf(false) }
     LaunchedEffect(name) {
@@ -151,12 +152,9 @@ fun ReviewScreen(
         autoStatus = "Ищу логотип и цвета «$query»…"
         val found = vm.autoDesign(query, vm.brand(brandId))
         if (found != null && logoFile == null && !autoDisabled) {
-            val keepStart = colorStart
-            val keepEnd = colorEnd
-            applyDesign(found)
-            // цвет, выбранный вручную, не перебиваем
-            if (colorsTouched) { colorStart = keepStart; colorEnd = keepEnd }
-            autoStatus = null
+            // Ничего не применяем без подтверждения — показываем, что нашлось.
+            pendingDesign = found
+            autoStatus = "Нашёл оформление — подтвердите"
         } else if (logoFile == null) {
             autoStatus = "Автоматически не нашёл — нажмите, чтобы выбрать магазин"
         }
@@ -353,12 +351,45 @@ fun ReviewScreen(
         }
     }
 
+    pendingDesign?.let { d ->
+        ConfirmDesignDialog(
+            design = d,
+            cardName = name.ifBlank { d.name },
+            number = number.trim(),
+            format = format,
+            onConfirm = {
+                val keepStart = colorStart
+                val keepEnd = colorEnd
+                applyDesign(d)
+                // цвет, выбранный вручную, не перебиваем
+                if (colorsTouched) { colorStart = keepStart; colorEnd = keepEnd }
+                vm.confirmDesign(d, name)
+                touched = true
+                autoStatus = null
+                pendingDesign = null
+            },
+            onOther = {
+                vm.discardDesign(d)
+                pendingDesign = null
+                autoDisabled = true
+                autoStatus = null
+                showSearch = true
+            },
+            onReject = {
+                vm.discardDesign(d)
+                pendingDesign = null
+                autoDisabled = true
+                autoStatus = "Оформление не применено — нажмите, чтобы найти вручную"
+            },
+        )
+    }
+
     if (showSearch) {
         StoreSearchSheet(
             vm = vm,
             initialQuery = name.ifBlank { brand?.name.orEmpty() },
             onDismiss = { showSearch = false },
-            onDesign = { applyDesign(it); touched = true; showSearch = false },
+            onDesign = { pendingDesign = it; showSearch = false },
         )
     }
 
