@@ -2,6 +2,7 @@ package com.mycards.wallet
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -64,8 +65,27 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        requestHighestRefreshRate()
         handleIntent(intent)
         setContent { OriginTheme { AppRoot(sharedImage) } }
+    }
+
+    /**
+     * Просим систему держать максимальную частоту экрана: 144 Гц на iQOO Neo 9S Pro+,
+     * 120 Гц на vivo X200 Pro mini. Без этого OriginOS может оставить приложение на 60 Гц.
+     * Берём режим с тем же разрешением, что и текущий, — меняется только частота.
+     */
+    private fun requestHighestRefreshRate() {
+        val display = (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) display else null)
+            ?: @Suppress("DEPRECATION") windowManager.defaultDisplay
+            ?: return
+        val current = display.mode
+        val best = display.supportedModes
+            .filter { it.physicalWidth == current.physicalWidth && it.physicalHeight == current.physicalHeight }
+            .maxByOrNull { it.refreshRate } ?: return
+        if (best.refreshRate > current.refreshRate || window.attributes.preferredDisplayModeId != best.modeId) {
+            window.attributes = window.attributes.apply { preferredDisplayModeId = best.modeId }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
