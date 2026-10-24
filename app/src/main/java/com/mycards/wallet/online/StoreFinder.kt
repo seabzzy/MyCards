@@ -197,7 +197,10 @@ object StoreFinder {
         val hits = runCatching { webHits("$query магазин официальный сайт") }.getOrNull() ?: return null
         // Берём только сайт, который действительно похож на магазин: адрес латиницей
         // совпадает с названием или название есть в заголовке страницы (справочники отсеиваются).
-        for (webSite in hits.sites.take(4)) {
+        val top = hits.sites.take(4)
+        // сначала сайты, чей адрес совпадает с названием латиницей, потом остальные
+        val ordered = top.filter { hostMatches(it, query) } + top.filterNot { hostMatches(it, query) }
+        for (webSite in ordered) {
             if (!looksLikeStore(webSite, query)) continue
             runCatching { assemble(webSite, null) }.getOrNull()?.let { return it }
         }
@@ -233,11 +236,16 @@ object StoreFinder {
         TRANSLIT[ch] ?: if (ch in 'a'..'z' || ch in '0'..'9') ch.toString() else ""
     }.joinToString("")
 
-    /** Похоже ли, что это сайт именно этого магазина, а не справочник или посторонняя страница. */
-    private fun looksLikeStore(site: String, query: String): Boolean {
+    /** Адрес сайта совпадает с названием магазина латиницей (poryadok…, europa…, magnit…). */
+    private fun hostMatches(site: String, query: String): Boolean {
         val host = runCatching { URL(site).host.lowercase() }.getOrDefault("")
         val latin = translit(query)
-        if (latin.length >= 4 && host.contains(latin.take(minOf(latin.length, 6)))) return true
+        return latin.length >= 4 && host.contains(latin.take(minOf(latin.length, 6)))
+    }
+
+    /** Похоже ли, что это сайт именно этого магазина, а не справочник или посторонняя страница. */
+    private fun looksLikeStore(site: String, query: String): Boolean {
+        if (hostMatches(site, query)) return true
         val page = runCatching { String(get(site, 300 * 1024, accept = "text/html").second, Charsets.UTF_8) }
             .getOrNull() ?: return false
         val title = Regex("<title[^>]*>(.*?)</title>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
