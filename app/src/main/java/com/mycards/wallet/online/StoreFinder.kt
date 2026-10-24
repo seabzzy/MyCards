@@ -10,6 +10,8 @@ import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
+import java.net.URLDecoder
+import android.util.Base64
 import kotlin.math.max
 
 /** Оформление, найденное в интернете (ещё не сохранённое). */
@@ -39,8 +41,13 @@ object StoreFinder {
     private fun userAgentFor(url: String): String {
         val host = runCatching { URL(url).host.lowercase() }.getOrDefault("")
         return if (host.endsWith("wikidata.org") || host.endsWith("wikipedia.org") || host.endsWith("wikimedia.org")) UA
+        else if (host.endsWith("bing.com")) DESKTOP_UA
         else BROWSER_UA
     }
+
+    /** Bing отдаёт разбираемую выдачу только «компьютеру». */
+    private const val DESKTOP_UA =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
 
     private const val UA = "MyCards/1.0 (Android; personal loyalty-card wallet)"
     private const val TIMEOUT = 10_000
@@ -70,6 +77,9 @@ object StoreFinder {
      * @param manualSite адрес сайта, введённый пользователем
      */
     fun buildDesign(candidate: StoreCandidate?, manualSite: String?): FoundDesign {
+        // Варианты из обычного поиска в интернете
+        if (candidate != null && candidate.id.startsWith("web:")) return assemble(candidate.id.removePrefix("web:"), null)
+        if (candidate != null && candidate.id.startsWith("vk:")) return fromVk(candidate.id.removePrefix("vk:"))
         var website = manualSite?.trim()?.takeIf { it.isNotEmpty() }?.let(::normalizeUrl)
         var logoName: String? = null
         if (candidate != null) {
@@ -180,8 +190,154 @@ object StoreFinder {
                 businessSite = runCatching { claimOf(c.id, "P856") }.getOrNull()
             }
         }
-        val site = businessSite ?: fallbackSite ?: return null
-        return runCatching { assemble(site, null) }.getOrNull()
+        val site = businessSite ?: fallbackSite
+        if (site != null) runCatching { assemble(site, null) }.getOrNull()?.let { return it }
+
+        // В Википедии нет — ищем как обычный человек: поисковик в русском сегменте.
+        val hits = runCatching { webHits("$query магазин официальный сайт") }.getOrNull() ?: return null
+        // Берём только сайт, который действительно похож на магазин: адрес латиницей
+        // совпадает с названием или название есть в заголовке страницы (справочники отсеиваются).
+        for (webSite in hits.sites.take(4)) {
+            if (!looksLikeStore(webSite, query)) continue
+            runCatching { assemble(webSite, null) }.getOrNull()?.let { return it }
+        }
+        for (vk in hits.vk.take(1)) {
+            runCatching { fromVk(vk) }.getOrNull()?.let { return it }
+        }
+        return null
+    }
+
+    // ---------- Поиск в интернете (русский сегмент) ----------
+
+    /** Справочники, отзовики, маркетплейсы и соцсети — это не сайт магазина. */
+    private val AGGREGATORS = listOf(
+        "wikipedia.org", "wikidata.org", "wikimedia.org", "yandex.", "ya.ru", "google.", "bing.com", "duckduckgo.com",
+        "mail.ru", "2gis.", "zoon.", "flamp.", "otzovik.", "irecommend.", "spr.ru", "magazinnoff.", "shopandmall.",
+        "tcshops.", "find-co.", "adresatelefony.", "firstmagazin.", "rusprofile.", "list-org.", "checko.", "sbis.ru",
+        "hh.ru", "avito.", "ozon.", "wildberries.", "youtube.", "rutube.", "dzen.ru", "pikabu.", "orgpage.", "yell.ru",
+        "ok.ru", "t.me", "telegram.", "instagram.", "facebook.", "twitter.", "tripadvisor.", "edadeal.", "skidkaonline.",
+        "proskidku.", "katalog", "spravker.", "cataloxy.", "kartaslov.", "infobel.", "companies.", "zachestnyibiznes.",
+        "vc.ru", "habr.", "rbc.ru", "kommersant.", "ria.ru", "tass.ru", "retail.ru", "new-retail.", "sravni.",
+    )
+
+    private class WebHits(val sites: List<String>, val vk: List<String>)
+
+    private val TRANSLIT = mapOf(
+        'а' to "a", 'б' to "b", 'в' to "v", 'г' to "g", 'д' to "d", 'е' to "e", 'ё' to "e", 'ж' to "zh",
+        'з' to "z", 'и' to "i", 'й' to "y", 'к' to "k", 'л' to "l", 'м' to "m", 'н' to "n", 'о' to "o",
+        'п' to "p", 'р' to "r", 'с' to "s", 'т' to "t", 'у' to "u", 'ф' to "f", 'х' to "h", 'ц' to "ts",
+        'ч' to "ch", 'ш' to "sh", 'щ' to "sch", 'ъ' to "", 'ы' to "y", 'ь' to "", 'э' to "e", 'ю' to "yu", 'я' to "ya",
+    )
+
+    private fun translit(s: String): String = s.lowercase().map { ch ->
+        TRANSLIT[ch] ?: if (ch in 'a'..'z' || ch in '0'..'9') ch.toString() else ""
+    }.joinToString("")
+
+    /** Похоже ли, что это сайт именно этого магазина, а не справочник или посторонняя страница. */
+    private fun looksLikeStore(site: String, query: String): Boolean {
+        val host = runCatching { URL(site).host.lowercase() }.getOrDefault("")
+        val latin = translit(query)
+        if (latin.length >= 4 && host.contains(latin.take(minOf(latin.length, 6)))) return true
+        val page = runCatching { String(get(site, 300 * 1024, accept = "text/html").second, Charsets.UTF_8) }
+            .getOrNull() ?: return false
+        val title = Regex("<title[^>]*>(.*?)</title>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
+            .find(page)?.groupValues?.get(1).orEmpty()
+        val siteName = Regex("property=[\"']og:site_name[\"'][^>]+content=[\"']([^\"']+)")
+            .find(page)?.groupValues?.get(1).orEmpty()
+        val q = norm(query)
+        return q.length >= 3 && norm(unescape("$title $siteName")).contains(q)
+    }
+
+    /** Ссылки из выдачи: сначала DuckDuckGo (регион «Россия»), затем его облегчённая версия, затем Bing. */
+    private fun webResults(query: String): List<String> {
+        val q = URLEncoder.encode(query, "UTF-8")
+        val engines: List<Pair<String, (String) -> List<String>>> = listOf(
+            "https://html.duckduckgo.com/html/?q=$q&kl=ru-ru" to { page -> parseDdg(page) },
+            "https://lite.duckduckgo.com/lite/?q=$q&kl=ru-ru" to { page -> parseDdg(page) },
+            "https://www.bing.com/search?q=$q&setlang=ru&cc=RU" to { page -> parseBing(page) },
+        )
+        for ((url, parse) in engines) {
+            val page = runCatching { String(get(url, 900 * 1024, accept = "text/html").second, Charsets.UTF_8) }
+                .getOrNull() ?: continue
+            val links = runCatching { parse(page) }.getOrDefault(emptyList())
+            if (links.isNotEmpty()) return links
+        }
+        return emptyList()
+    }
+
+    private fun webHits(query: String): WebHits {
+        val sites = LinkedHashSet<String>()
+        val vk = LinkedHashSet<String>()
+        for (link in webResults(query)) {
+            val host = runCatching { URL(link).host.lowercase().removePrefix("www.") }.getOrNull() ?: continue
+            if (host == "vk.com" || host == "m.vk.com" || host == "vk.ru") {
+                vk += link.substringBefore('?')
+                continue
+            }
+            if (AGGREGATORS.any { host.contains(it) }) continue
+            sites += "https://$host"
+        }
+        return WebHits(sites.toList(), vk.toList())
+    }
+
+    private fun unescape(s: String) = s.replace("&amp;", "&").replace("&#x2F;", "/").replace("&#47;", "/")
+        .replace("&quot;", "\"").replace("&#39;", "'").replace("&#x27;", "'")
+
+    private fun parseDdg(page: String): List<String> {
+        val out = mutableListOf<String>()
+        Regex("href=\"([^\"]*uddg=[^\"]+)\"").findAll(page).forEach { m ->
+            val href = unescape(m.groupValues[1])
+            val target = Regex("[?&]uddg=([^&]+)").find(href)?.groupValues?.get(1) ?: return@forEach
+            out += URLDecoder.decode(target, "UTF-8")
+        }
+        if (out.isEmpty()) {
+            Regex("class=\"result__a\"[^>]*href=\"(https?://[^\"]+)\"").findAll(page)
+                .forEach { out += unescape(it.groupValues[1]) }
+        }
+        return out.distinct()
+    }
+
+    private fun parseBing(page: String): List<String> =
+        Regex("<li class=\"b_algo\"[^>]*>.*?<a[^>]+href=\"(https?://[^\"]+)\"", RegexOption.DOT_MATCHES_ALL)
+            .findAll(page).mapNotNull { m ->
+                val href = unescape(m.groupValues[1])
+                if (href.contains("bing.com/ck/a")) {
+                    // Ссылка-переадресация Bing: настоящий адрес лежит в параметре u= (base64 с префиксом a1)
+                    val encoded = Regex("[?&]u=a1([^&]+)").find(href)?.groupValues?.get(1) ?: return@mapNotNull null
+                    runCatching {
+                        String(Base64.decode(encoded, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING), Charsets.UTF_8)
+                    }.getOrNull()
+                } else href
+            }.toList().distinct()
+
+    /** Аватар группы ВКонтакте — для местных сетей, у которых нет своего сайта. */
+    private fun fromVk(link: String): FoundDesign {
+        val page = String(get(link, 700 * 1024, accept = "text/html").second, Charsets.UTF_8)
+        val image = Regex("<meta[^>]+property=[\"']og:image[\"'][^>]+content=[\"']([^\"']+)").find(page)?.groupValues?.get(1)
+            ?: Regex("<meta[^>]+content=[\"']([^\"']+)[\"'][^>]+property=[\"']og:image").find(page)?.groupValues?.get(1)
+            ?: throw FinderException("В группе ВКонтакте не нашлось аватара")
+        val logo = downloadBitmap(unescape(image)) ?: throw FinderException("Не удалось загрузить аватар группы")
+        val base = colorFromLogo(logo) ?: 0xFF5B7CFF.toInt()
+        return FoundDesign(link, fitLogo(logo), base, darken(base))
+    }
+
+    /**
+     * Ручной поиск: варианты из Википедии + сайты и группы ВКонтакте из обычной выдачи.
+     * Организации из Википедии идут первыми, затем сайты из интернета, затем прочее.
+     */
+    fun searchAll(query: String): List<StoreCandidate> {
+        val wiki = runCatching { search(query) }.getOrDefault(emptyList())
+            .filterNot { it.description.contains("значени", true) || it.description.contains("disambiguation", true) }
+        val hits = runCatching { webHits("$query магазин официальный сайт") }.getOrNull()
+        val latin = translit(query).take(6)
+        val sortedSites = hits?.sites?.sortedByDescending { latin.length >= 4 && it.contains(latin) }
+        val web = sortedSites?.take(5)?.map {
+            StoreCandidate("web:$it", it.removePrefix("https://"), "Сайт из поиска в интернете")
+        }.orEmpty() + hits?.vk?.take(2)?.map {
+            StoreCandidate("vk:$it", it.removePrefix("https://"), "Группа ВКонтакте")
+        }.orEmpty()
+        val (business, other) = wiki.partition { BUSINESS.containsMatchIn(it.description) }
+        return business + web + other
     }
 
     private fun downloadCommonsImage(fileName: String): Bitmap? {
